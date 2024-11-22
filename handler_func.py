@@ -1,14 +1,19 @@
 from native_ai import get_answer,get_answers_list
 import json
 import levels
+import os
+
+
+path = os.getcwd()
 
 
 
-with open("/home/vivek/Desktop/Apps/Native-AI/tools/tata-webhook/cat.json", "r") as f:
+with open(f"{path}/cat.json", "r") as f:
     level_1_2_dict = json.load(f)
     
 answer = ""
 answer_list = []
+question_list = []
 
 
 def get_suggestions(intent):
@@ -52,7 +57,13 @@ def get_intent_response(intent):
 def get_multiple_suggestions(intent):
     chatid = str(intent['chatId'])
     query_user = intent['fulfillment']['parameters']['question']
-    global answer_list 
+    # clear list
+    global answer_list, question_list
+    if answer_list:
+        answer_list.clear()
+    if question_list:
+        question_list.clear()  
+
     answer_list,question_list = get_answers_list(query_user)
     if not answer_list:
         intent = {
@@ -70,7 +81,23 @@ def get_multiple_suggestions(intent):
                     "value": str(j),
                     "trigger": 20002
                 }
-            for j,i in enumerate(question_list)]
+            for j,i in enumerate(question_list[:5])]
+    payload .append({"label": "🔍➡️ See More Suggestions", "value": "See More Suggestions", "trigger": 20003})
+    
+    metadata = {"metadata": {"payload": payload, "templateId": 6 }}
+
+    intent.update(metadata)
+      
+    return intent
+
+def get_multiple_suggestions_more(intent):
+    payload = [{
+                    "label": i,
+                    "value": str(j),
+                    "trigger": 20004
+                }
+            for j,i in enumerate(question_list[5:],start=5)]
+    payload .append({"label": "Rephrase query", "value": "Rephrase query", "trigger": 20000})
     
     metadata = {"metadata": {"payload": payload, "templateId": 6 }}
 
@@ -82,7 +109,7 @@ def get_intent_response_multiple(intent):
     chatid = str(intent['chatId'])
     query_user = intent['fulfillment']['parameters']['question']
     query_index = int(query_user)
-    message = {"message": answer_list[query_index]}
+    message = {"message": "<b>Solution :</b></br>"+answer_list[query_index]}
     intent.update(message)
     return intent
 
@@ -147,7 +174,7 @@ def get_level_4(intent):
 
 def get_level_response(intent):
     details = intent['fulfillment']['parameters']['details'][0]["value"]
-    message = {"message": levels.res_dict.get(int(details))}
+    message = {"message": "<b>Solution :</b></br>"+levels.res_dict.get(int(details))}
     intent.update(message)
     return intent
 

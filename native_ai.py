@@ -10,7 +10,7 @@ import os
 path = os.getcwd()
 
 # Load the DataFrame from the pickle file
-df = pd.read_pickle(f"{path}/df-data/service_new_dataframe.pkl")
+df = pd.read_pickle(f"{path}/df-data/service_new_dataframe_2.pkl")
 
 
 # Initialize OllamaEmbedding
@@ -50,14 +50,14 @@ def get_answer(question):
     if min(distances[0]) > 350:
         return None,None 
     most_sim = indices[0][0]    
-    answer = df.iloc[most_sim]["Response_html"]
+    answer = df.iloc[most_sim]["html_sol"]
     query = df.iloc[most_sim]["Issue"]
     # print(answer)
     return query,answer
 
 
 def get_answers_list(question):
-    distances, indices = get_most_similar(question,k_=3)    
+    distances, indices = get_most_similar(question,k_=10)    
     most_sim_list = list(indices[0])
 
     print("Distances:", list(distances[0]))  
@@ -66,10 +66,10 @@ def get_answers_list(question):
         answer_list = None
         query_list = None    
     elif distances[0][0] < 50 and distances[0][1] - distances[0][0] > 70:
-        answer_list = [df.iloc[most_sim_list[0]]["Response_html"]]
+        answer_list = [df.iloc[most_sim_list[0]]["html_sol"]]
         query_list = [df.iloc[most_sim_list[0]]["Issue"]]    
     else:       
-        answer_list = [df.iloc[most_sim]["Response_html"] for most_sim in most_sim_list]
+        answer_list = [df.iloc[most_sim]["html_sol"] for most_sim in most_sim_list]
         query_list = [df.iloc[most_sim]["Issue"] for most_sim in most_sim_list]
     # print(answer)
     return answer_list,query_list
