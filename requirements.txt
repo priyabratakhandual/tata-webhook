@@ -1,2 +1,12 @@
-llama-index-readers-smart-pdf-loader
-llmsherpa
+fastapi[standard]
+uvicorn
+python-dotenv
+llama-index-embeddings-ollama
+llama-index
+numpy
+pandas
+faiss-cpu
+python-multipart
+wheel
+gunicorn
+requests

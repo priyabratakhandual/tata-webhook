@@ -1,13 +1,16 @@
 import pandas as pd
 import pandas as pd
 from llama_index.embeddings.ollama import OllamaEmbedding
-from llama_index.vector_stores.faiss import FaissVectorStore
+# from llama_index.vector_stores.faiss import FaissVectorStore
 import faiss
 import numpy as np
+import os
 
+
+path = os.getcwd()
 
 # Load the DataFrame from the pickle file
-df = pd.read_pickle("/home/vivek/Desktop/Apps/Native-AI/tools/tata-webhook/serv_dataframe.pkl")
+df = pd.read_pickle(f"{path}/df-data/service_new_dataframe.pkl")
 
 
 # Initialize OllamaEmbedding
@@ -21,7 +24,7 @@ ollama_embedding = OllamaEmbedding(
 embedding_dim = 768
 
 # Load the saved FAISS index
-faiss_index = faiss.read_index("/home/vivek/Desktop/Apps/Native-AI/tools/tata-webhook/service_faiss_index.bin")
+faiss_index = faiss.read_index(f"{path}/service_faiss_index.bin")
 # loaded_vector_store = FaissVectorStore(faiss_index=faiss_index)
 print("FAISS index loaded successfully")
 
@@ -47,7 +50,7 @@ def get_answer(question):
     if min(distances[0]) > 350:
         return None,None 
     most_sim = indices[0][0]    
-    answer = df.iloc[most_sim]["html_sol"]
+    answer = df.iloc[most_sim]["Response_html"]
     query = df.iloc[most_sim]["Issue"]
     # print(answer)
     return query,answer
@@ -63,10 +66,10 @@ def get_answers_list(question):
         answer_list = None
         query_list = None    
     elif distances[0][0] < 50 and distances[0][1] - distances[0][0] > 70:
-        answer_list = [df.iloc[most_sim_list[0]]["html_sol"]]
+        answer_list = [df.iloc[most_sim_list[0]]["Response_html"]]
         query_list = [df.iloc[most_sim_list[0]]["Issue"]]    
     else:       
-        answer_list = [df.iloc[most_sim]["html_sol"] for most_sim in most_sim_list]
+        answer_list = [df.iloc[most_sim]["Response_html"] for most_sim in most_sim_list]
         query_list = [df.iloc[most_sim]["Issue"] for most_sim in most_sim_list]
     # print(answer)
     return answer_list,query_list

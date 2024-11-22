@@ -6,9 +6,9 @@ import json
 
 app = FastAPI()
 
-@app.get("/")
+@app.get("/tata-webhook/ping")
 def root():   
-    return {"message": "Hello World"}
+    return {"message": "Pong"}
 
 @app.post("/tata-webhook/webhook")
 def webhook(intent : Annotated[str, Form()]):
