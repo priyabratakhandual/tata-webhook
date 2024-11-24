@@ -21,7 +21,11 @@ def webhook(intent : Annotated[str, Form()]):
         "action-level-3": handler_func.get_level_3,
         "action-level-4" : handler_func.get_level_4,
         "action-level-response": handler_func.get_level_response,
-        "action_suggestions_more": handler_func.get_multiple_suggestions_more
+        "action_suggestions_more": handler_func.get_multiple_suggestions_more,
+        "action_select_submodule" : handler_func.get_select_submodule,
+        "action_submodule_suggestions": handler_func.get_submodule_suggestions,
+        "action_get_issue_category": handler_func.action_get_issue_category,
+        "action_rulebased_issue_suggestions": handler_func.action_rulebased_issue_suggestions
         
     }
 
