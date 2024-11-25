@@ -1,0 +1,659 @@
+[
+    {
+    "id": 1,
+    "start": true,
+    "message": "👋 Greetings!<br>Welcome to Tata Motors Support Bot.",
+    "trigger": 10,
+    "userInput": false
+    },
+    {
+        "id": 10,
+        "message": "Could you please share your name with me before we get started?",
+        "trigger": 2,
+        "userInput": true
+
+    },
+    {
+        "id": 2,
+        "message": "Thank you, {previousValue:10} ! <br> What can we help you with today? Please choose an option below to begin!",
+        "userInput": false,
+        "metadata": {
+            "payload": [{
+                    "label": "🛠️💡Guided Assistance",
+                    "value": "Guided Assistance",
+                    "trigger": 20
+                },
+                {
+                    "label": "🤖💬 AI Quick Help",
+                    "value": "AI Quick Help",
+                    "trigger": 21
+                }
+            ],
+            "templateId": 6
+        }
+    },
+    {
+        "id": 20,
+        "message": "Kindly choose a main category to continue",
+        "metadata": {
+            "payload": [{
+                    "label": "🔧Service",
+                    "value": "Service",
+                    "trigger": 200
+                },
+                {
+                    "label": "🚗Sales",
+                    "value": "Sales",
+                    "trigger": 200
+                },
+                {
+                    "label": "Go Back",
+                    "value": "Go Back",
+                    "image": "https://i.ibb.co/RSJ9szb/back.png",
+                    "trigger": 2
+                }
+            ],
+            "templateId": 6
+        },
+        "userInput": false
+    },
+    {
+        "id": 21,
+        "message": "Kindly choose a main category to continue",
+        "metadata": {
+            "payload": [{
+                    "label": "🔧Service",
+                    "value": "Service",
+                    "trigger": 20000
+                },
+                {
+                    "label": "🚗Sales",
+                    "value": "Sales",
+                    "trigger": 20000
+                },
+                {
+                    "label": "Go Back",
+                    "value": "Go Back",
+                    "image": "https://i.ibb.co/RSJ9szb/back.png",
+                    "trigger": 2
+                }
+            ],
+            "templateId": 6
+        },
+        "userInput": false
+    },
+    {
+        "id": 200,
+        "message": "Select the specific area where you need assistance.",
+        "fulfillment": {
+          "action": "action-level-2",
+          "parameters": { "module": "{previousValue:20}" },
+          "previousIntent": 20
+        },
+        "metadata": {
+            "payload": [
+            {
+                "label": "Job Card",
+                "value": "Job Card",
+                "trigger": 2000
+            },
+            {   
+                "label": "Main Menu",
+                "value": "Main Menu",
+                "trigger": 2
+            },
+            {
+                "label": "Go Back",
+                "value": "Go Back",
+                "image": "https://i.ibb.co/RSJ9szb/back.png",
+                "trigger": 20
+            }
+            ],
+            "templateId": 6
+        },
+        "userInput": false
+    },
+    {
+        "id": 2000,
+        "message": "Please select the issue category to proceed.",
+        "metadata": {
+          "message": "something went wrong. Submit details again",
+          "payload": [
+            {
+              "data": {
+                "title": "Issue Category",
+                "options": [{ "label": "CAT01_01", "value": "CAT01_01" }],
+                "optional": false
+              },
+              "name": "level3",
+              "type": "dropdown"
+            },
+            {
+              "type": "submit",
+              "label": "Next",
+              "message": "Next",
+              "trigger": 2001,
+              "formAction": "/",
+              "requestType": "POST"
+            },
+            {
+              "type": "cancel",
+              "label": "Cancel",
+              "message": "Cancelled",
+              "trigger": 200
+            }
+          ],
+          "trigger": 6,
+          "templateId": 13,
+          "contentType": "300"
+        },
+        "userInput": false,
+        "fulfillment": {
+          "action": "action-level-3",
+          "parameters": {"module": "{previousValue:20}","submodule": "{previousValue:200}"},
+          "previousIntent": 200
+        }
+      },
+      {
+        "id": 2001,
+        "message": "You can type your question or select a suggested query for quick assistance!",
+        "trigger": 2002,
+        "userInput": true,
+        "inputOptions": {
+            "type": "auto-suggest",
+            "options": [
+                {
+                    "label": "Option A",
+                    "value": "Option A"
+                }                
+            ],
+            "multiple": false,
+            "optional": false
+        },
+         "fulfillment": {
+          "action": "action-level-4",
+          "parameters": {"module": "{previousValue:20}","submodule": "{previousValue:200}","issuecategory": "{previousValue:2000}" },
+          "previousIntent": 2000
+        }
+    },
+    {
+        "id": 2002,
+        "message": "Here is the response",
+        "metadata": {
+            "payload": [
+                {
+                    "label": "Home",
+                    "value": "Home",
+                    "trigger": 2
+                },
+                {
+                    "label": "Go Back",
+                    "value": "Go Back",
+                    "image": "https://i.ibb.co/RSJ9szb/back.png",
+                    "trigger": 2001
+                },
+                {
+                    "label": "Raise a ticket",
+                    "value": "Raise a ticket",
+                    "trigger": 205
+                }
+            
+            ],
+            "templateId": 6
+        },
+        "fulfillment": {
+          "action": "action-level-response",
+          "parameters": { "details": "{previousValue:2001}" },
+          "previousIntent": 2001
+        },
+        "userInput": false
+    },
+    {
+        "id": 20000,
+        "message": "Please type your query below, and we'll assist you right away.",
+        "userInput": true,
+        "trigger": 20001
+    },
+    {
+        "id": 20001,
+        "message": "Did you mean?",
+        "fulfillment": {
+            "action": "action_suggestions",
+            "parameters": {
+                "question": "{previousValue:20000}",
+                "module": "{previousValue:21}"
+            },
+            "previousIntent": 20000
+        },
+        "metadata": {
+            "payload": [
+                {
+                    "label": "Query",
+                    "value": "Query",
+                    "trigger": 20002
+                },
+                {
+                    "label": "Load more",
+                    "value": "Load more",
+                    "trigger": 20003
+                }
+            ],
+            "templateId": 6
+        }
+    },
+
+    {
+        "id": 20002,
+        "message": "Here is the response.",
+        "fulfillment": {
+            "action": "action_ask_query",
+            "parameters": {
+                "question": "{previousValue:20001}"
+            },
+            "previousIntent": 20001
+        },
+        "metadata": {
+            "payload": [
+                {
+                    "label": "Main Menu",
+                    "value": "Main Menu",
+                    "trigger": 2
+                },
+                {
+                    "label": "Raise a ticket",
+                    "value": "Raise a ticket",
+                    "trigger": 205
+                },
+                {
+                    "label": "Ask query",
+                    "value": "Ask query",
+                    "trigger": 20000
+                }
+            ],
+            "templateId": 6
+        }
+
+    },
+    {
+        "id": 20003,
+        "message": "More suggestions.",
+        "fulfillment": {
+            "action": "action_suggestions_more",
+            "parameters": {
+                "question": "{previousValue:20000}"
+            },
+            "previousIntent": 20000
+        },
+        "metadata": {
+            "payload": [
+                {
+                    "label": "Query",
+                    "value": "Query",
+                    "trigger": 20004
+                }
+            ],
+            "templateId": 6
+        }
+    },
+    {
+        "id": 20004,
+        "message": "Here is the response.",
+        "fulfillment": {
+            "action": "action_ask_query",
+            "parameters": {
+                "question": "{previousValue:20003}"
+            },
+            "previousIntent": 20003
+        },
+        "metadata": {
+            "payload": [
+                {
+                    "label": "Main Menu",
+                    "value": "Main Menu",
+                    "trigger": 2
+                },
+                {
+                    "label": "Raise a ticket",
+                    "value": "Raise a ticket",
+                    "trigger": 205
+                },
+                {
+                    "label": "Ask query",
+                    "value": "Ask query",
+                    "trigger": 20000
+                }
+            ],
+            "templateId": 6
+        }
+
+    },
+    {
+        "id": 20005,
+        "message": "Select Select Sub-Module",
+        "fulfillment": {
+            "action": "action_select_submodule",
+            "parameters": {
+                "question": "{previousValue:20000}",
+                "module": "{previousValue:21}"
+            },
+            "previousIntent": 21
+        },
+        "metadata": {
+            "payload": [
+                {
+                    "label": "submodule",
+                    "value": "submodule",
+                    "trigger": 20006
+                },
+
+                {
+                    "label": "Main Menu",
+                    "value": "Main Menu",
+                    "trigger": 2
+                },
+                {
+                    "label": "Rephrase query",
+                    "value": "Rephrase query",
+                    "trigger": 20000
+                }
+            ],
+            "templateId": 6
+        }
+
+    },
+
+    {
+        "id": 20006,
+        "message": "More suggestions.",
+        "fulfillment": {
+            "action": "action_submodule_suggestions",
+            "parameters": {
+                "question": "{previousValue:20000}",
+                "module": "{previousValue:21}",
+                "submodule": "{previousValue:20005}"
+            },
+            "previousIntent": 20005
+        },
+        "metadata": {
+            "payload": [
+                {
+                    "label": "Rephrase query",
+                    "value": "Rephrase query",
+                    "trigger": 20007
+                },
+                {
+                    "label": "Response",
+                    "value": "Response",
+                    "trigger": 20008
+                }
+            ],
+            "templateId": 6
+        }
+    },
+    {
+        "id": 20007,
+        "message": "Please type your query below.",
+        "userInput": true,
+        "trigger": 20009
+    },
+    {
+        "id": 20009,
+        "message": "Did you mean?",
+        "fulfillment": {
+            "action": "action_submodule_suggestions",
+            "parameters": {
+                "question": "{previousValue:20007}",
+                "module": "{previousValue:21}",
+                "submodule": "{previousValue:20005}"
+            },
+            "previousIntent": 20000
+        },
+        "metadata": {
+            "payload": [
+                {
+                    "label": "Query",
+                    "value": "Query",
+                    "trigger": 20011
+                },
+                {
+                    "label": "Load more",
+                    "value": "Load more",
+                    "trigger": 20010
+                },
+                {
+                    "label": "Select issue category",
+                    "value": "Select issue category",
+                    "trigger": 20012
+                }
+            ],
+            "templateId": 6
+        }
+    },
+    {
+        "id": 20010,
+        "message": "More suggestions.",
+        "fulfillment": {
+            "action": "action_submodule_suggestions_more",
+            "parameters": {
+                "question": "{previousValue:20000}",
+                "module": "{previousValue:21}",
+                "submodule": "{previousValue:20005}"
+            },
+            "previousIntent": 20005
+        },
+        "metadata": {
+            "payload": [
+                {
+                    "label": "Rephrase query",
+                    "value": "Rephrase query",
+                    "trigger": 20000
+                },
+                {
+                    "label": "Response",
+                    "value": "Response",
+                    "trigger": 20011
+                }
+            ],
+            "templateId": 6
+        }
+    },
+    {
+        "id": 20011,
+        "message": "Here is the response.",
+        "fulfillment": {
+            "action": "action_ask_query",
+            "parameters": {
+                "question": "{previousValue:20010}"
+            },
+            "previousIntent": 20010
+        },
+        "metadata": {
+            "payload": [
+                {
+                    "label": "Main Menu",
+                    "value": "Main Menu",
+                    "trigger": 2
+                },
+                {
+                    "label": "Raise a ticket",
+                    "value": "Raise a ticket",
+                    "trigger": 205
+                },
+                {
+                    "label": "Ask another query",
+                    "value": "Ask query",
+                    "trigger": 20000
+                }
+            ],
+            "templateId": 6
+        }
+
+    },
+    {
+        "id": 20012,
+        "message": "Please select the issue category to proceed.",
+        "metadata": {
+          "message": "something went wrong. Submit details again",
+          "payload": [
+            {
+              "data": {
+                "title": "Issue Category",
+                "options": [{ "label": "CAT01_01", "value": "CAT01_01" }],
+                "optional": false
+              },
+              "name": "level3",
+              "type": "dropdown"
+            },
+            {
+              "type": "submit",
+              "label": "Next",
+              "message": "Next",
+              "trigger": 20013,
+              "formAction": "/",
+              "requestType": "POST"
+            },
+            {
+              "type": "cancel",
+              "label": "Cancel",
+              "message": "Cancelled",
+              "trigger": 20009
+            }
+          ],
+          "trigger": 6,
+          "templateId": 13,
+          "contentType": "300"
+        },
+        "userInput": false,
+        "fulfillment": {
+          "action": "action-get-issue-category",
+          "parameters": { 
+            "question": "{previousValue:20000}",
+            "module": "{previousValue:21}",
+            "submodule": "{previousValue:20005}" },
+          "previousIntent": 20009
+        }
+      },
+      
+      
+      {
+        "id": 20013,
+        "message": "You can type your question or select a suggested query for quick assistance!",
+        "trigger": 20014,
+        "userInput": true,
+        "inputOptions": {
+            "type": "auto-suggest",
+            "options": [
+                {
+                    "label": "Option A",
+                    "value": "Option A"
+                }                
+            ],
+            "multiple": false,
+            "optional": false
+        },
+         "fulfillment": {
+          "action": "action_rulebased_issue_suggestions",
+          "parameters": {
+                "question": "{previousValue:20000}",
+                "module": "{previousValue:21}",
+                "submodule": "{previousValue:20005}",
+                "issue_category": "{previousValue:20012}"
+            },
+          "previousIntent": 20012
+        }
+    },
+    {
+        "id": 20014,
+        "message": "Here is the response.",
+        "fulfillment": {
+            "action": "action_get_intent_response_multiple",
+            "parameters": {
+                "question": "{previousValue:20013}"
+            },
+            "previousIntent": 20013
+        },
+        "metadata": {
+            "payload": [
+                {
+                    "label": "Main Menu",
+                    "value": "Main Menu",
+                    "trigger": 2
+                },
+                {
+                    "label": "Raise a ticket",
+                    "value": "Raise a ticket",
+                    "trigger": 205
+                },
+                {
+                    "label": "Ask another query",
+                    "value": "Ask query",
+                    "trigger": 20000
+                }
+            ],
+            "templateId": 6
+        }
+
+    },
+
+    {
+        "id": 20008,
+        "message": "Here is the response.",
+        "fulfillment": {
+            "action": "action_ask_query",
+            "parameters": {
+                "question": "{previousValue:20006}"
+            },
+            "previousIntent": 20006
+        },
+        "metadata": {
+            "payload": [
+                {
+                    "label": "Main Menu",
+                    "value": "Main Menu",
+                    "trigger": 2
+                },
+                {
+                    "label": "Raise a ticket",
+                    "value": "Raise a ticket",
+                    "trigger": 205
+                },
+                {
+                    "label": "Ask another query",
+                    "value": "Ask another query",
+                    "trigger": 20000
+                }
+            ],
+            "templateId": 6
+        }
+
+    },
+    {
+        "id": 205,
+        "message": "We’ve received your query! A ticket has been generated, and we’ll get back to you shortly.",
+        "metadata": {
+            "payload": [
+                
+                {
+                    "label": "Ask query",
+                    "value": "Ask query",
+                    "trigger": 20000
+                },
+                {
+                    "label": "Home",
+                    "value": "Home",
+                    "trigger": 2
+                },
+                {
+                    "label": "Go Back",
+                    "value": "Go Back",
+                    "image": "https://i.ibb.co/RSJ9szb/back.png",
+                    "trigger": 2001
+                }
+            ],
+            "templateId": 6
+        }
+    }
+
+
+
+]
