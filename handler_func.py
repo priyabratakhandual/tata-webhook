@@ -16,7 +16,7 @@ def get_multiple_suggestions(intent):
     module = intent['fulfillment']['parameters']['module']
     if chat_data.get(chatid):
         del chat_data[chatid]
-    sim_answer = get_answer(module_name=module, question=query_user)
+    sim_answer ,sim_answer_list = get_answer(module_name=module, question=query_user)
     if not sim_answer:
         intent = {
         "id": 20000,
@@ -31,6 +31,7 @@ def get_multiple_suggestions(intent):
         chat_data[chatid] = {
         "query": query_user,
         "similar": sim_answer,
+        "similar_list": sim_answer_list,
         "module": module,
         "submodule": "",
         "issuecategory": ""
@@ -205,7 +206,7 @@ def get_select_submodule(intent):
     query = intent['fulfillment']['parameters']['question']
     module = intent['fulfillment']['parameters']['module']
 
-    cat_list = get_submodule(module=module,submodule=None, issuecategory=None)
+    cat_list = list(set([i["Sub-Module"] for i in chat_data[chatid]["similar_list"]]))
 
 
     payload = [
@@ -230,34 +231,18 @@ def get_submodule_suggestions(intent):
     module = intent['fulfillment']['parameters']['module']
     submodule = intent['fulfillment']['parameters'].get('submodule')
     chat_data[chatid]["submodule"] = submodule  
-    sim_answer = get_answer(module_name=module, question=query_user,submodule=submodule)
-    if not sim_answer:
-        intent = {
-        "id": 20000,
-        "message": "We couldn’t find any suggestions. Could you please rephrase your question?",
-        "userInput": True,
-        "trigger": 20001
-            }
-        return intent
-    
-    else:
 
-        chat_data[chatid]["similar"] = sim_answer
-        chat_data[chatid]["module"] = module
-        chat_data[chatid]["submodule"] = submodule
+    chat_sim= chat_data[chatid]["similar"]
 
-
+    sim_answer = [(i,chat_sim[i]['Issue']) for i in chat_sim.keys() if chat_sim[i]['Sub-Module'] == submodule]
     print(sim_answer)
-
-    question_list = list(sim_answer.keys())
-
     payload = [{
-                    "label": sim_answer[question_index]["Issue"],
+                    "label": question,
                     "value": str(question_index),
                     "trigger": 20011
                 }
-            for question_index in question_list[:5]]
-    if len(question_list) > 5:    
+            for question_index,question in sim_answer[:5]]
+    if len(sim_answer) > 5:    
         payload.append({"label": "🔍➡️ See More Suggestions", "value": "See More Suggestions", "trigger": 20010})
     else:
         payload.append({"label": "Rephrase query", "value": "Rephrase query", "trigger": 20000})
@@ -270,14 +255,17 @@ def get_submodule_suggestions(intent):
     return intent
 def action_submodule_suggestions_more(intent):
     chatid = str(intent['chatId'])
-    sim_answer = chat_data[chatid]["similar"]
+    submodule = intent['fulfillment']['parameters'].get('submodule')
+    chat_sim= chat_data[chatid]["similar"]
 
+    sim_answer = [(i,chat_sim[i]['Issue']) for i in chat_sim.keys() if chat_sim[i]['Sub-Module'] == submodule]
+    print(sim_answer)
     payload = [{
-                    "label": sim_answer[question_index]["Issue"],
+                    "label": question,
                     "value": str(question_index),
                     "trigger": 20011
                 }
-            for question_index in list(sim_answer.keys())[5:]]
+            for question_index,question in sim_answer[5:]]
     payload .append({"label": "Rephrase query", "value": "Rephrase query", "trigger": 20000})
     payload.append({"label": "Select Issue Category", "value": "Select Issue Category", "trigger": 20012})
     
@@ -292,7 +280,7 @@ def action_get_issue_category(intent):
     query = intent['fulfillment']['parameters']['question']
     module = intent['fulfillment']['parameters']['module']
     submodule = intent['fulfillment']['parameters']['submodule']
-    cat_list = get_submodule(module=module,submodule=submodule)
+    cat_list = list(set([i['Issue Category'] for i in chat_data[chatid]["similar_list"] if i['Sub-Module'] == submodule]))
 
     options_list = []
     for i in cat_list:
@@ -339,18 +327,13 @@ def action_rulebased_issue_suggestions(intent):
     module = intent['fulfillment']['parameters']['module']
     submodule = intent['fulfillment']['parameters']['submodule']
     issue_category = intent['fulfillment']['parameters']['issue_category']['level3']
-    result_dict_list = get_basic_submodule(module=module, submodule=submodule, issuecategory=issue_category)
+    chat_sim= chat_data[chatid]["similar"]
 
-    # sim_answer = get_answer(module_name=module, question=query,submodule=submodule,issue_category=issue_category)
-    if chatid not in chat_data:
-        chat_data[chatid] = {}
-    
-    ## Store the QnA data in the chat_data dictionary
-    chat_data[chatid]["result_dict_list"] = result_dict_list
+    sim_answer = [(i,chat_sim[i]['Issue']) for i in chat_sim.keys() if chat_sim[i]['Sub-Module'] == submodule and chat_sim[i]['Issue Category'] == issue_category]
 
     response_list = []
-    for i,j in enumerate(result_dict_list):
-        response_list.append({"label": j["Issue"], "value": str(i)})
+    for i,j in sim_answer:
+        response_list.append({"label": j, "value": i})
 
     inputOption = { "inputOptions": {
             "type": "auto-suggest",

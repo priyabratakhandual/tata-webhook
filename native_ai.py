@@ -99,10 +99,10 @@ def get_answer(module_name, question,submodule=None, issuecategory=None):
     print(indices)
 
     if not indices:
-        return None
+        return None, None
     else:
         nearest_data = {}
-
+        nearest_data_list = []
         for j,i in enumerate(indices):
             data = metadata[i]
             print(data['Sub-Module'])
@@ -113,10 +113,13 @@ def get_answer(module_name, question,submodule=None, issuecategory=None):
 
             nearest_data[str(j)] = {
                 "Issue": data['Issue'],
+                "Sub-Module": data['Sub-Module'],
+                "Issue Category": data['Issue Category'],
                 "Resolution/Escalation": data['Resolution/Escalation']
             }
+            nearest_data_list.append(nearest_data[str(j)])
         
-        return nearest_data
+        return nearest_data,nearest_data_list
     
 
 
