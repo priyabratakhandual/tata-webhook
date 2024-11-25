@@ -1,5 +1,4 @@
 import pandas as pd
-import pandas as pd
 from llama_index.embeddings.ollama import OllamaEmbedding
 import faiss
 import numpy as np
@@ -19,13 +18,13 @@ embedding_dim = 768
 
 
 # Load the DataFrame from the pickle file
-df_service = pd.read_pickle(f"{path}/df-data/service_dataframe.pkl")
-df_sales = pd.read_pickle(f"{path}/df-data/sales_dataframe.pkl")
+df_service = pd.read_pickle(f"{path}/service_dataframe.pkl")
+df_sales = pd.read_pickle(f"{path}/sales_dataframe.pkl")
 # Load the saved FAISS index
 faiss_index_service = faiss.read_index(f"{path}/service_faiss_index.bin")
 faiss_index_sales = faiss.read_index(f"{path}/sales_faiss_index.bin")
-loaded_metadata_sales = pd.read_pickle(f"{path}/df-data/sales_metadata.pkl")
-loaded_metadata_service = pd.read_pickle(f"{path}/df-data/service_metadata.pkl")
+loaded_metadata_sales = pd.read_pickle(f"{path}/sales_metadata.pkl")
+loaded_metadata_service = pd.read_pickle(f"{path}/service_metadata.pkl")
 
 
 # loaded_vector_store = FaissVectorStore(faiss_index=faiss_index)
@@ -83,19 +82,19 @@ def get_most_similar(faiss_index,text,k_=10):
  
 def get_answer(module_name, question,submodule=None, issuecategory=None):   
 
-    if module_name == "service":
-        faiss_index = faiss_index_service
+    if module_name == "Service":
+        faiss_ind = faiss_index_service
         df = df_service
         metadata = loaded_metadata_service
-    elif module_name == "sales":
-        faiss_index = faiss_index_sales
+    elif module_name == "Sales":
+        faiss_ind = faiss_index_sales
         df = df_sales
         metadata = loaded_metadata_sales
     
     if submodule or issuecategory:
-        metadata, faiss_index = create_faiss_index_by_module_submodule(df=df, submodule=submodule, issuecategory=issuecategory)    
+        metadata, faiss_ind = create_faiss_index_by_module_submodule(df=df, submodule=submodule, issuecategory=issuecategory)    
 
-    distances, indices = get_most_similar(faiss_index=faiss_index,text=question,k_=10)  
+    distances, indices = get_most_similar(faiss_index=faiss_ind,text=question,k_=10)  
     print(distances)
     print(indices)
 
@@ -122,17 +121,17 @@ def get_answer(module_name, question,submodule=None, issuecategory=None):
 
 
 def get_submodule(module,submodule=None, issuecategory=None):
-    if module == "service":
+    if module == "Service":
         df = df_service
-        cat_list = df["Sub-Module"].unique()
-    elif module == "sales":
+        cat_list = list(df["Sub-Module"].unique())
+    elif module == "Sales":
         df = df_sales
-        cat_list = df["Sub-Module"].unique()
+        cat_list = list(df["Sub-Module"].unique())
     
     if submodule:
-        cat_list = df[df["Sub-Module"] == submodule]["Issue Category"].unique()
+        cat_list = list(df[df["Sub-Module"] == submodule]["Issue Category"].unique())
         if issuecategory:
-            cat_list = df[(df["Sub-Module"] == submodule) & (df["Issue Category"] == issuecategory)]["Issue"].unique()
+            cat_list = list(df[(df["Sub-Module"] == submodule) & (df["Issue Category"] == issuecategory)]["Issue"].unique())
     return cat_list
 
 

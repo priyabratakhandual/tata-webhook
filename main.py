@@ -16,16 +16,19 @@ def webhook(intent : Annotated[str, Form()]):
     print(intent_dict)
     action = intent_dict.get("fulfillment").get("action")
     handler_functions = {
-        "action_suggestions": handler_func.get_multiple_suggestions,
-        "action_ask_query": handler_func.get_intent_response_multiple,
+        "action-level-2": handler_func.get_level_2,
         "action-level-3": handler_func.get_level_3,
         "action-level-4" : handler_func.get_level_4,
+        "action_suggestions": handler_func.get_multiple_suggestions,
+        "action_ask_query": handler_func.get_intent_response_multiple,
         "action-level-response": handler_func.get_level_response,
         "action_suggestions_more": handler_func.get_multiple_suggestions_more,
         "action_select_submodule" : handler_func.get_select_submodule,
         "action_submodule_suggestions": handler_func.get_submodule_suggestions,
-        "action_get_issue_category": handler_func.action_get_issue_category,
-        "action_rulebased_issue_suggestions": handler_func.action_rulebased_issue_suggestions
+        "action_submodule_suggestions_more": handler_func.action_submodule_suggestions_more,
+        "action-get-issue-category": handler_func.action_get_issue_category,
+        "action_rulebased_issue_suggestions": handler_func.action_rulebased_issue_suggestions,
+        "action_get_intent_response_multiple": handler_func.get_ai_last_intent_response_multiple
         
     }
 
