@@ -1,18 +1,11 @@
 import pandas as pd
-import pandas as pd
 from llama_index.embeddings.ollama import OllamaEmbedding
-# from llama_index.vector_stores.faiss import FaissVectorStore
 import faiss
 import numpy as np
 import os
 
-
-path = os.getcwd()
-
-# Load the DataFrame from the pickle file
-df = pd.read_pickle(f"{path}/df-data/service_new_dataframe_2.pkl")
-
-
+index_dir = "all_data"
+path = os.getcwd()+"/"+index_dir
 # Initialize OllamaEmbedding
 ollama_embedding = OllamaEmbedding(
     model_name="nomic-embed-text:latest",
@@ -23,55 +16,126 @@ ollama_embedding = OllamaEmbedding(
 # Dimensions of the embedding model
 embedding_dim = 768
 
+
+# Load the DataFrame from the pickle file
+df_service = pd.read_pickle(f"{path}/service_dataframe.pkl")
+df_sales = pd.read_pickle(f"{path}/sales_dataframe.pkl")
 # Load the saved FAISS index
-faiss_index = faiss.read_index(f"{path}/service_faiss_index.bin")
+faiss_index_service = faiss.read_index(f"{path}/service_faiss_index.bin")
+faiss_index_sales = faiss.read_index(f"{path}/sales_faiss_index.bin")
+loaded_metadata_sales = pd.read_pickle(f"{path}/sales_metadata.pkl")
+loaded_metadata_service = pd.read_pickle(f"{path}/service_metadata.pkl")
+
+
 # loaded_vector_store = FaissVectorStore(faiss_index=faiss_index)
 print("FAISS index loaded successfully")
 
+# Function to create FAISS index based on Module and Sub Module
+def create_faiss_index_by_module_submodule(df, submodule=None, issuecategory=None):
+    # Filter DataFrame based on Module and Sub Module
+    if submodule and issuecategory:
+        filtered_df = df[(df['Sub-Module'] == submodule) & (df['Issue Category'] == issuecategory)]
+    elif submodule and issuecategory==None:
+        filtered_df = df[(df['Sub-Module'] == submodule)]        
+    
+    if filtered_df.empty:
+        print(f"No data found for Module: {submodule} and Sub Module: {issuecategory}")
+        return None, None
 
-def get_most_similar(text,k_=1):
+    # Extract the embeddings (convert them into a NumPy array)
+    embeddings = np.vstack(filtered_df['embedding'].values).astype("float32")
+
+    # Initialize the FAISS index
+    embedding_dim = embeddings.shape[1]  # Assuming all embeddings have the same dimension
+    faiss_index = faiss.IndexFlatL2(embedding_dim)
+
+    # Add embeddings to the FAISS index
+    faiss_index.add(embeddings)
+    # Store metadata
+    metadata = filtered_df.to_dict(orient='records')
+
+    return metadata, faiss_index
+
+def get_most_similar(faiss_index,text,k_=10):
     query_embedding = ollama_embedding.get_query_embedding(text)
     query_embedding_np = np.array(query_embedding, dtype="float32")[np.newaxis, :]
     # print(query_embedding)
     distances, indices = faiss_index.search(query_embedding_np, k=k_)
-    return distances, indices
 
+    
+    # Set the maximum distance threshold
+    max_distance_threshold = 350
+    
+    # Filter results based on the distance threshold
+    filtered_distances = []
+    filtered_indices = []
 
-def get_top_similar(text,k_=3):
-    query_embedding = ollama_embedding.get_query_embedding(text)
-    query_embedding_np = np.array(query_embedding, dtype="float32")[np.newaxis, :]
-    # print(query_embedding)
-    distances, indices = faiss_index.search(query_embedding_np, k=k_)
-    return distances, indices
-
+    if distances[0][0] > max_distance_threshold:
+        print("No similar Issue found")
+    else:    
+        for dist, idx in zip(distances[0], indices[0]):
+            if dist > max_distance_threshold:
+                break  # Stop iterating as distances are sorted
+            filtered_distances.append(dist)
+            filtered_indices.append(idx)    
+    return filtered_distances,filtered_indices
  
-def get_answer(question):
-    distances, indices = get_most_similar(question,k_=1)   
-    if min(distances[0]) > 350:
-        return None,None 
-    most_sim = indices[0][0]    
-    answer = df.iloc[most_sim]["html_sol"]
-    query = df.iloc[most_sim]["Issue"]
-    # print(answer)
-    return query,answer
+def get_answer(module_name, question,submodule=None, issuecategory=None):   
+
+    if module_name == "Service":
+        faiss_ind = faiss_index_service
+        df = df_service
+        metadata = loaded_metadata_service
+    elif module_name == "Sales":
+        faiss_ind = faiss_index_sales
+        df = df_sales
+        metadata = loaded_metadata_sales
+    
+    if submodule or issuecategory:
+        metadata, faiss_ind = create_faiss_index_by_module_submodule(df=df, submodule=submodule, issuecategory=issuecategory)    
+
+    distances, indices = get_most_similar(faiss_index=faiss_ind,text=question,k_=10)  
+    print(distances)
+    print(indices)
+
+    if not indices:
+        return None
+    else:
+        nearest_data = {}
+
+        for j,i in enumerate(indices):
+            data = metadata[i]
+            print(data['Sub-Module'])
+            print(data['Issue Category'])
+            print(data['Issue'])
+            print(data['Resolution/Escalation'])
+            print("\n \n")
+
+            nearest_data[str(j)] = {
+                "Issue": data['Issue'],
+                "Resolution/Escalation": data['Resolution/Escalation']
+            }
+        
+        return nearest_data
+    
 
 
-def get_answers_list(question):
-    distances, indices = get_most_similar(question,k_=10)    
-    most_sim_list = list(indices[0])
+def get_submodule(module,submodule=None, issuecategory=None):
+    if module == "Service":
+        df = df_service
+        cat_list = list(df["Sub-Module"].unique())
+    elif module == "Sales":
+        df = df_sales
+        cat_list = list(df["Sub-Module"].unique())
+    
+    if submodule:
+        cat_list = list(df[df["Sub-Module"] == submodule]["Issue Category"].unique())
+        if issuecategory:
+            cat_list = list(df[(df["Sub-Module"] == submodule) & (df["Issue Category"] == issuecategory)]["Issue"].unique())
+    return cat_list
 
-    print("Distances:", list(distances[0]))  
 
-    if distances[0][0] > 350:
-        answer_list = None
-        query_list = None    
-    elif distances[0][0] < 50 and distances[0][1] - distances[0][0] > 70:
-        answer_list = [df.iloc[most_sim_list[0]]["html_sol"]]
-        query_list = [df.iloc[most_sim_list[0]]["Issue"]]    
-    else:       
-        answer_list = [df.iloc[most_sim]["html_sol"] for most_sim in most_sim_list]
-        query_list = [df.iloc[most_sim]["Issue"] for most_sim in most_sim_list]
-    # print(answer)
-    return answer_list,query_list
+    
+
 
 
