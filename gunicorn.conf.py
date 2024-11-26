@@ -6,7 +6,7 @@ accesslog = f'{os.getcwd()}/logs/gunicorn_access.log'
 capture_output = True
 
 # Number of worker processes
-workers = 4
+workers = 2
 
 # The type of workers to use
 worker_class = 'uvicorn.workers.UvicornWorker'

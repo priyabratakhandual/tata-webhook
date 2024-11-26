@@ -65,6 +65,7 @@ def get_most_similar(faiss_index,text,k_=10):
     
     # Set the maximum distance threshold
     max_distance_threshold = 350
+    best_match = False
     
     # Filter results based on the distance threshold
     filtered_distances = []
@@ -72,13 +73,15 @@ def get_most_similar(faiss_index,text,k_=10):
 
     if distances[0][0] > max_distance_threshold:
         print("No similar Issue found")
-    else:    
+    else:
+        if distances[0][0]<35:
+            best_match = True    
         for dist, idx in zip(distances[0], indices[0]):
             if dist > max_distance_threshold:
                 break  # Stop iterating as distances are sorted
             filtered_distances.append(dist)
             filtered_indices.append(idx)    
-    return filtered_distances,filtered_indices
+    return filtered_distances,filtered_indices,best_match
  
 def get_answer(module_name, question,submodule=None, issuecategory=None):   
 
@@ -94,15 +97,15 @@ def get_answer(module_name, question,submodule=None, issuecategory=None):
     if submodule or issuecategory:
         metadata, faiss_ind = create_faiss_index_by_module_submodule(df=df, submodule=submodule, issuecategory=issuecategory)    
 
-    distances, indices = get_most_similar(faiss_index=faiss_ind,text=question,k_=10)  
+    distances, indices,best_match = get_most_similar(faiss_index=faiss_ind,text=question,k_=10)  
     print(distances)
     print(indices)
 
     if not indices:
-        return None
+        return None, None, best_match
     else:
         nearest_data = {}
-
+        nearest_data_list = []
         for j,i in enumerate(indices):
             data = metadata[i]
             print(data['Sub-Module'])
@@ -113,10 +116,13 @@ def get_answer(module_name, question,submodule=None, issuecategory=None):
 
             nearest_data[str(j)] = {
                 "Issue": data['Issue'],
+                "Sub-Module": data['Sub-Module'],
+                "Issue Category": data['Issue Category'],
                 "Resolution/Escalation": data['Resolution/Escalation']
             }
+            nearest_data_list.append(nearest_data[str(j)])
         
-        return nearest_data
+        return nearest_data,nearest_data_list,best_match
     
 
 

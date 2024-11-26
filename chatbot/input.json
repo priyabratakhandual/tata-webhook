@@ -7,6 +7,21 @@
     "userInput": false
     },
     {
+        "id": 11,
+        "message": "Your chat session has been refreshed. Please click on 'Refresh' to restart the conversation.",
+        "userInput": false,
+        "metadata": {
+            "payload": [
+                {
+                    "label": "Refresh",
+                    "value": "Refresh",
+                    "trigger": 20
+                }
+            ],
+            "templateId": 6
+        }
+        },
+    {
         "id": 10,
         "message": "Could you please share your name with me before we get started?",
         "trigger": 2,
@@ -392,9 +407,35 @@
     },
     {
         "id": 20007,
-        "message": "Please type your query below.",
-        "userInput": true,
-        "trigger": 20009
+        "message": "Here is the response.",
+        "fulfillment": {
+            "action": "action_ask_query",
+            "parameters": {
+                "question": "{previousValue:20006}"
+            },
+            "previousIntent": 20006
+        },
+        "metadata": {
+            "payload": [
+                {
+                    "label": "Main Menu",
+                    "value": "Main Menu",
+                    "trigger": 2
+                },
+                {
+                    "label": "Raise a ticket",
+                    "value": "Raise a ticket",
+                    "trigger": 205
+                },
+                {
+                    "label": "Ask another query",
+                    "value": "Ask query",
+                    "trigger": 20000
+                }
+            ],
+            "templateId": 6
+        }
+
     },
     {
         "id": 20009,
@@ -588,6 +629,12 @@
                     "label": "Ask another query",
                     "value": "Ask query",
                     "trigger": 20000
+                },
+                {
+                    "label": "Go Back",
+                    "value": "Go Back",
+                    "image": "https://i.ibb.co/RSJ9szb/back.png",
+                    "trigger": 20012
                 }
             ],
             "templateId": 6
