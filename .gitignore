@@ -6,3 +6,4 @@ venv
 app-doc
 data
 test
+logs.log

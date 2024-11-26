@@ -3,8 +3,27 @@ from typing import Annotated
 import handler_func 
 import uvicorn
 import json
+import logging
 
 app = FastAPI()
+
+logging.basicConfig(level=logging.INFO,filename='logs.log',filemode='w',format='%(asctime)s - %(levelname)s - %(message)s')
+
+fallback_ = {
+        "id": 11,
+        "message": "Your chat session has been refreshed. Please click on 'Refresh' to restart the conversation.",
+        "userInput": False,
+        "metadata": {
+            "payload": [
+                {
+                    "label": "Refresh",
+                    "value": "Refresh",
+                    "trigger": 20
+                }
+            ],
+            "templateId": 6
+        }
+        }
 
 @app.get("/tata-webhook/ping")
 def root():   
@@ -34,13 +53,11 @@ def webhook(intent : Annotated[str, Form()]):
 
     handler = handler_functions.get(action, None)
     if handler:
-        # try:
-        #     response_intent = json.dumps(handler(intent_dict))
-        # except Exception as e:
-        #     logging.error(f"Error processing webhook: {e}")
-        #     response_intent = fallback_
-        # return response_intent
-
+        try:
+            response_intent = json.dumps(handler(intent_dict))
+        except Exception as e:
+            logging.error(f"Error processing webhook: {e}")
+            response_intent = fallback_
         response_intent = handler(intent_dict)
         print("++++++++++++++Response++++++++")
         print(response_intent)

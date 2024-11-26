@@ -3,11 +3,24 @@ from df_data import get_basic_submodule
 import json
 import os
 from typing import Dict
+import random
 
 
 chat_data : Dict = {}
 
 path = os.getcwd()
+
+
+def random_fallback():
+    return fallback_messages[random.randint(0, len(fallback_messages)-1)]
+fallback_messages = [
+    "Sorry, I couldn't find an answer to your query. Could you please try rephrasing your question?",
+    "Apologies, I couldn’t find the information you’re looking for. Could you rephrase or provide more details?",
+    "I'm sorry, I don't have an answer for that. Could you try asking in a different way?",
+    "I couldn’t find a matching response. Can you rephrase your query for better results?",
+    "Sorry, I couldn’t understand your question. Could you please try rephrasing it?",
+    "I’m unable to provide an answer right now. Could you rephrase or clarify your question?"
+]
     
 
 def get_multiple_suggestions(intent):
@@ -16,11 +29,11 @@ def get_multiple_suggestions(intent):
     module = intent['fulfillment']['parameters']['module']
     if chat_data.get(chatid):
         del chat_data[chatid]
-    sim_answer ,sim_answer_list = get_answer(module_name=module, question=query_user)
+    sim_answer ,sim_answer_list ,best_match = get_answer(module_name=module, question=query_user)
     if not sim_answer:
         intent = {
         "id": 20000,
-        "message": "We couldn’t find an answer. Could you please rephrase your question?",
+        "message": random_fallback(),
         "userInput": True,
         "trigger": 20001
             }
@@ -38,20 +51,23 @@ def get_multiple_suggestions(intent):
     }
 
     print(sim_answer)
-
-    question_list = list(sim_answer.keys())
-
-    payload = [{
-                    "label": sim_answer[question_index]["Issue"],
-                    "value": str(question_index),
-                    "trigger": 20002
-                }
-            for question_index in question_list[:5]]
-    if len(question_list) > 5:    
-        payload.append({"label": "🔍➡️ See More Suggestions", "value": "See More Suggestions", "trigger": 20003})
+    if best_match:
+        payload = [{
+                        "label": sim_answer["0"]["Issue"],
+                        "value": "0",
+                        "trigger": 20002
+                    }
+                ]
     else:
-        payload.append({"label": "Rephrase query", "value": "Rephrase query", "trigger": 20000})
+        payload = []
+        message = {"message": "I couldn't find an exact match for your query. However, I do have some relevant suggestions. Please select 'Suggestions' to view them, or you can choose a different module by clicking below.<br>You are in module:<b> {previousValue:21}"}
+
+        intent.update(message)   
+        payload.append({"label": "🔍➡️ See Suggestions", "value": "See Suggestions", "trigger": 20003})
         payload.append({"label": "Select Sub-Module", "value": "Select Sub-Module", "trigger": 20005})
+    payload.append({"label": "Go Back", "value": "Go Back","image": "https://i.ibb.co/RSJ9szb/back.png", "trigger": 20000})
+    payload.append({"label": "Change module", "value": "Change module", "trigger": 21})
+
     
     metadata = {"metadata": {"payload": payload, "templateId": 6 }}
 
@@ -66,9 +82,10 @@ def get_multiple_suggestions_more(intent):
     payload = [{
                     "label": sim_answer[question_index]["Issue"],
                     "value": str(question_index),
-                    "trigger": 20002
+                    "trigger": 20004
                 }
-            for question_index in list(sim_answer.keys())[5:]]
+            for question_index in list(sim_answer.keys())]
+    payload.append({"label": "Go Back", "value": "Go Back","image": "https://i.ibb.co/RSJ9szb/back.png", "trigger": 20000})
     payload .append({"label": "Rephrase query", "value": "Rephrase query", "trigger": 20000})
     payload.append({"label": "Select Sub-Module", "value": "Select Sub-Module", "trigger": 20005})
     
@@ -86,13 +103,7 @@ def get_intent_response_multiple(intent):
     intent.update(message)
     return intent
 
-def get_ai_last_intent_response_multiple(intent):
-    chatid = str(intent['chatId'])
-    query_user = intent['fulfillment']['parameters']['question'][0]['value']
-    answer_list = chat_data[chatid]["similar"][query_user]["Resolution/Escalation"]
-    message = {"message": "<b>Solution :</b></br>"+answer_list}
-    intent.update(message)
-    return intent
+
 
 def get_level_2(intent):
     chatid = str(intent['chatId'])
@@ -216,6 +227,8 @@ def get_select_submodule(intent):
         "trigger": 20006} for i in cat_list]
 
     payload.append({"label": "Rephrase query", "value": "Rephrase query", "trigger": 20000})
+    payload.append({"label": "Go Back", "value": "Go Back","image": "https://i.ibb.co/RSJ9szb/back.png", "trigger": 20001})
+
 
     metadata = {"metadata": {
             "payload": payload,
@@ -239,7 +252,7 @@ def get_submodule_suggestions(intent):
     payload = [{
                     "label": question,
                     "value": str(question_index),
-                    "trigger": 20011
+                    "trigger": 20007
                 }
             for question_index,question in sim_answer[:5]]
     if len(sim_answer) > 5:    
@@ -247,6 +260,8 @@ def get_submodule_suggestions(intent):
     else:
         payload.append({"label": "Rephrase query", "value": "Rephrase query", "trigger": 20000})
         payload.append({"label": "Select Issue Category", "value": "Select Issue Category", "trigger": 20012})
+        payload.append({"label": "Go Back", "value": "Go Back","image": "https://i.ibb.co/RSJ9szb/back.png", "trigger": 20005})
+
     
     metadata = {"metadata": {"payload": payload, "templateId": 6 }}
 
@@ -268,6 +283,8 @@ def action_submodule_suggestions_more(intent):
             for question_index,question in sim_answer[5:]]
     payload .append({"label": "Rephrase query", "value": "Rephrase query", "trigger": 20000})
     payload.append({"label": "Select Issue Category", "value": "Select Issue Category", "trigger": 20012})
+    payload.append({"label": "Go Back", "value": "Go Back","image": "https://i.ibb.co/RSJ9szb/back.png", "trigger": 20001})
+
     
     metadata = {"metadata": {"payload": payload, "templateId": 6 }}
 
@@ -342,5 +359,14 @@ def action_rulebased_issue_suggestions(intent):
             "optional": False
         }}
     intent.update(inputOption)
+    return intent
+
+
+def get_ai_last_intent_response_multiple(intent):
+    chatid = str(intent['chatId'])
+    query_user = intent['fulfillment']['parameters']['question'][0]['value']
+    answer_list = chat_data[chatid]["similar"][query_user]["Resolution/Escalation"]
+    message = {"message": "<b>Solution :</b></br>"+answer_list}
+    intent.update(message)
     return intent
 
