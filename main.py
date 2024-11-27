@@ -32,6 +32,7 @@ def root():
 @app.post("/tata-webhook/webhook")
 def webhook(intent : Annotated[str, Form()]):
     intent_dict = json.loads(intent)
+    logging.info(f"Received intent: {intent_dict}")
     print(intent_dict)
     action = intent_dict.get("fulfillment").get("action")
     handler_functions = {
@@ -61,6 +62,8 @@ def webhook(intent : Annotated[str, Form()]):
         response_intent = handler(intent_dict)
         print("++++++++++++++Response++++++++")
         print(response_intent)
+        logging.info("-------------------------------------------")
+        logging.info(f"Response intent: {response_intent}")
         return response_intent
 
 
