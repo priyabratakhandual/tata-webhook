@@ -4,8 +4,10 @@ import json
 import os
 from typing import Dict
 import random
+import threading
 
 
+chat_data_lock = threading.Lock()
 chat_data : Dict = {}
 
 path = os.getcwd()
@@ -27,8 +29,7 @@ def get_multiple_suggestions(intent):
     chatid = str(intent['chatId'])
     query_user = intent['fulfillment']['parameters']['question']  
     module = intent['fulfillment']['parameters']['module']
-    if chat_data.get(chatid):
-        del chat_data[chatid]
+    
     sim_answer ,sim_answer_list ,best_match = get_answer(module_name=module, question=query_user)
     if not sim_answer:
         intent = {
@@ -40,15 +41,17 @@ def get_multiple_suggestions(intent):
         return intent
     
     else:
-
-        chat_data[chatid] = {
-        "query": query_user,
-        "similar": sim_answer,
-        "similar_list": sim_answer_list,
-        "module": module,
-        "submodule": "",
-        "issuecategory": ""
-    }
+        with threading.Lock():
+            if chat_data.get(chatid):
+                del chat_data[chatid]            
+            chat_data[chatid] = {
+            "query": query_user,
+            "similar": sim_answer,
+            "similar_list": sim_answer_list,
+            "module": module,
+            "submodule": "",
+            "issuecategory": ""
+        }
 
     print(sim_answer)
     if best_match:
@@ -181,11 +184,10 @@ def get_level_4(intent):
     issuecategory = intent['fulfillment']['parameters']['issuecategory']['level3']
     result_dict_list = get_basic_submodule(module=module, submodule=submodule, issuecategory=issuecategory)
 
-    if chatid not in chat_data:
-        chat_data[chatid] = {}
-    
-    ## Store the QnA data in the chat_data dictionary
-    chat_data[chatid]["result_dict_list"] = result_dict_list
+    with chat_data_lock:
+        if chatid not in chat_data:
+            chat_data[chatid] = {}
+        chat_data[chatid]["result_dict_list"] = result_dict_list
 
     response_list = []
     for i,j in enumerate(result_dict_list):
