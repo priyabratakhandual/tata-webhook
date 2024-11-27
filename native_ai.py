@@ -105,7 +105,6 @@ def get_answer(module_name, question,submodule=None, issuecategory=None):
         return None, None, best_match
     else:
         nearest_data = {}
-        nearest_data_list = []
         for i in indices:
             data = metadata[i]
             print(data['Sub-Module'])
@@ -120,9 +119,8 @@ def get_answer(module_name, question,submodule=None, issuecategory=None):
                 "Issue Category": data['Issue Category'],
                 "Resolution/Escalation": data['Resolution/Escalation']
             }
-            nearest_data_list.append(nearest_data[str(i)])
         
-        return nearest_data,nearest_data_list,best_match
+        return nearest_data,indices,best_match
     
 
 

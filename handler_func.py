@@ -37,7 +37,7 @@ def get_multiple_suggestions(intent):
     query_user = intent['fulfillment']['parameters']['question']  
     module = intent['fulfillment']['parameters']['module']
     
-    sim_answer ,sim_answer_list ,best_match = get_answer(module_name=module, question=query_user)
+    sim_answer ,indices,best_match = get_answer(module_name=module, question=query_user)
     if not sim_answer:
         intent = {
         "id": 20000,
@@ -54,7 +54,7 @@ def get_multiple_suggestions(intent):
             chat_data[chatid] = {
             "query": query_user,
             "similar": sim_answer,
-            "similar_list": sim_answer_list,
+            "indices": indices,
             "module": module,
             "submodule": "",
             "issuecategory": ""
@@ -62,9 +62,10 @@ def get_multiple_suggestions(intent):
 
     print(sim_answer)
     if best_match:
+        best_match_index = str(indices[0])
         payload = [{
-                        "label": sim_answer["0"]["Issue"],
-                        "value": "0",
+                        "label": sim_answer[best_match_index]["Issue"],
+                        "value": best_match_index,
                         "trigger": 20002
                     }
                 ]
@@ -226,7 +227,10 @@ def get_select_submodule(intent):
     query = intent['fulfillment']['parameters']['question']
     module = intent['fulfillment']['parameters']['module']
 
-    cat_list = list(set([i["Sub-Module"] for i in chat_data[chatid]["similar_list"]]))
+    sim_indices = chat_data[chatid]["indices"]
+    chat_sim = chat_data[chatid]["similar"]
+
+    cat_list = list(set([chat_sim[i]["Sub-Module"] for i in sim_indices]))
 
 
     payload = [
@@ -254,9 +258,10 @@ def get_submodule_suggestions(intent):
     submodule = intent['fulfillment']['parameters'].get('submodule')
     chat_data[chatid]["submodule"] = submodule  
 
-    chat_sim= chat_data[chatid]["similar"]
+    sim_indices = chat_data[chatid]["indices"]
+    chat_sim = chat_data[chatid]["similar"]
 
-    sim_answer = [(i,chat_sim[i]['Issue']) for i in chat_sim.keys() if chat_sim[i]['Sub-Module'] == submodule]
+    sim_answer = [(i,chat_sim[i]['Issue']) for i in sim_indices if chat_sim[i]['Sub-Module'] == submodule]
     print(sim_answer)
     payload = [{
                     "label": question,
@@ -280,9 +285,10 @@ def get_submodule_suggestions(intent):
 def action_submodule_suggestions_more(intent):
     chatid = str(intent['chatId'])
     submodule = intent['fulfillment']['parameters'].get('submodule')
-    chat_sim= chat_data[chatid]["similar"]
+    sim_indices = chat_data[chatid]["indices"]
+    chat_sim = chat_data[chatid]["similar"]
 
-    sim_answer = [(i,chat_sim[i]['Issue']) for i in chat_sim.keys() if chat_sim[i]['Sub-Module'] == submodule]
+    sim_answer = [(i,chat_sim[i]['Issue']) for i in sim_indices if chat_sim[i]['Sub-Module'] == submodule]
     print(sim_answer)
     payload = [{
                     "label": question,
@@ -306,7 +312,11 @@ def action_get_issue_category(intent):
     query = intent['fulfillment']['parameters']['question']
     module = intent['fulfillment']['parameters']['module']
     submodule = intent['fulfillment']['parameters']['submodule']
-    cat_list = list(set([i['Issue Category'] for i in chat_data[chatid]["similar_list"] if i['Sub-Module'] == submodule]))
+
+    sim_indices = chat_data[chatid]["indices"]
+    chat_sim = chat_data[chatid]["similar"]
+
+    cat_list = list(set([chat_sim[i]['Issue Category'] for i in sim_indices if chat_sim[i]['Sub-Module'] == submodule]))
 
     options_list = []
     for i in cat_list:
@@ -353,9 +363,11 @@ def action_rulebased_issue_suggestions(intent):
     module = intent['fulfillment']['parameters']['module']
     submodule = intent['fulfillment']['parameters']['submodule']
     issue_category = intent['fulfillment']['parameters']['issue_category']['level3']
-    chat_sim= chat_data[chatid]["similar"]
 
-    sim_answer = [(i,chat_sim[i]['Issue']) for i in chat_sim.keys() if chat_sim[i]['Sub-Module'] == submodule and chat_sim[i]['Issue Category'] == issue_category]
+    sim_indices = chat_data[chatid]["indices"]
+    chat_sim = chat_data[chatid]["similar"]
+
+    sim_answer = [(i,chat_sim[i]['Issue']) for i in sim_indices if chat_sim[i]['Sub-Module'] == submodule and chat_sim[i]['Issue Category'] == issue_category]
 
     response_list = []
     for i,j in sim_answer:
