@@ -12,9 +12,16 @@ chat_data : Dict = {}
 
 path = os.getcwd()
 
+last_message = None
 
 def random_fallback():
-    return fallback_messages[random.randint(0, len(fallback_messages)-1)]
+    global last_message
+    while True:
+        message = random.choice(fallback_messages)
+        if message != last_message:
+            last_message = message
+            return message
+        
 fallback_messages = [
     "Sorry, I couldn't find an answer to your query. Could you please try rephrasing your question?",
     "Apologies, I couldn’t find the information you’re looking for. Could you rephrase or provide more details?",
@@ -68,7 +75,7 @@ def get_multiple_suggestions(intent):
         intent.update(message)   
         payload.append({"label": "🔍➡️ See Suggestions", "value": "See Suggestions", "trigger": 20003})
         payload.append({"label": "Select Sub-Module", "value": "Select Sub-Module", "trigger": 20005})
-    payload.append({"label": "Go Back", "value": "Go Back","image": "https://i.ibb.co/RSJ9szb/back.png", "trigger": 20000})
+    payload.append({"label": "Rephrase query", "value": "Rephrase query","trigger": 20000})
     payload.append({"label": "Change module", "value": "Change module", "trigger": 21})
 
     
