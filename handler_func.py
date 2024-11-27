@@ -48,9 +48,9 @@ def get_multiple_suggestions(intent):
         return intent
     
     else:
-        with threading.Lock():
+        with chat_data_lock:
             if chat_data.get(chatid):
-                del chat_data[chatid]            
+                del chat_data[chatid]      
             chat_data[chatid] = {
             "query": query_user,
             "similar": sim_answer,
@@ -60,59 +60,61 @@ def get_multiple_suggestions(intent):
             "issuecategory": ""
         }
 
-    print(sim_answer)
-    if best_match:
-        best_match_index = str(indices[0])
-        payload = [{
-                        "label": sim_answer[best_match_index]["Issue"],
-                        "value": best_match_index,
-                        "trigger": 20002
-                    }
-                ]
-    else:
-        payload = []
-        message = {"message": "I couldn't find an exact match for your query. However, I do have some relevant suggestions. Please select 'Suggestions' to view them, or you can choose a different module by clicking below.<br>You are in module:<b> {previousValue:21}"}
+        print(sim_answer)
+        if best_match:
+            best_match_index = str(indices[0])
+            payload = [{
+                            "label": sim_answer[best_match_index]["Issue"],
+                            "value": best_match_index,
+                            "trigger": 20002
+                        }
+                    ]
+        else:
+            payload = []
+            message = {"message": "I couldn't find an exact match for your query. However, I do have some relevant suggestions. Please select 'Suggestions' to view them, or you can choose a different module by clicking below.<br>You are in module:<b> {previousValue:21}"}
 
-        intent.update(message)   
-        payload.append({"label": "🔍➡️ See Suggestions", "value": "See Suggestions", "trigger": 20003})
-        payload.append({"label": "Select Sub-Module", "value": "Select Sub-Module", "trigger": 20005})
-    payload.append({"label": "Rephrase query", "value": "Rephrase query","trigger": 20000})
-    payload.append({"label": "Change module", "value": "Change module", "trigger": 21})
+            intent.update(message)   
+            payload.append({"label": "🔍➡️ See Suggestions", "value": "See Suggestions", "trigger": 20003})
+            payload.append({"label": "Select Sub-Module", "value": "Select Sub-Module", "trigger": 20005})
+        payload.append({"label": "Rephrase query", "value": "Rephrase query","trigger": 20000})
+        payload.append({"label": "Change module", "value": "Change module", "trigger": 21})
 
-    
-    metadata = {"metadata": {"payload": payload, "templateId": 6 }}
+        
+        metadata = {"metadata": {"payload": payload, "templateId": 6 }}
 
-    intent.update(metadata)
-      
-    return intent
+        intent.update(metadata)
+        
+        return intent
 
 def get_multiple_suggestions_more(intent):
     chatid = str(intent['chatId'])
-    sim_answer = chat_data[chatid]["similar"]
+    with chat_data_lock:
+        sim_answer = chat_data[chatid]["similar"]
 
-    payload = [{
-                    "label": sim_answer[question_index]["Issue"],
-                    "value": str(question_index),
-                    "trigger": 20004
-                }
-            for question_index in list(sim_answer.keys())]
-    payload.append({"label": "Go Back", "value": "Go Back","image": "https://i.ibb.co/RSJ9szb/back.png", "trigger": 20000})
-    payload .append({"label": "Rephrase query", "value": "Rephrase query", "trigger": 20000})
-    payload.append({"label": "Select Sub-Module", "value": "Select Sub-Module", "trigger": 20005})
-    
-    metadata = {"metadata": {"payload": payload, "templateId": 6 }}
+        payload = [{
+                        "label": sim_answer[question_index]["Issue"],
+                        "value": str(question_index),
+                        "trigger": 20004
+                    }
+                for question_index in list(sim_answer.keys())]
+        payload.append({"label": "Go Back", "value": "Go Back","image": "https://i.ibb.co/RSJ9szb/back.png", "trigger": 20000})
+        payload .append({"label": "Rephrase query", "value": "Rephrase query", "trigger": 20000})
+        payload.append({"label": "Select Sub-Module", "value": "Select Sub-Module", "trigger": 20005})
+        
+        metadata = {"metadata": {"payload": payload, "templateId": 6 }}
 
-    intent.update(metadata)
-      
-    return intent
+        intent.update(metadata)
+        
+        return intent
 
 def get_intent_response_multiple(intent):
     chatid = str(intent['chatId'])
     query_user = intent['fulfillment']['parameters']['question']
-    answer_list = chat_data[chatid]["similar"][query_user]["Resolution/Escalation"]
-    message = {"message": "<b>Solution :</b></br>"+answer_list}
-    intent.update(message)
-    return intent
+    with chat_data_lock:
+        answer_list = chat_data[chatid]["similar"][query_user]["Resolution/Escalation"]
+        message = {"message": "<b>Solution :</b></br>"+answer_list}
+        intent.update(message)
+        return intent
 
 
 
@@ -197,164 +199,170 @@ def get_level_4(intent):
             chat_data[chatid] = {}
         chat_data[chatid]["result_dict_list"] = result_dict_list
 
-    response_list = []
-    for i,j in enumerate(result_dict_list):
-        response_list.append({"label": j["Issue"], "value": str(i)})
+        response_list = []
+        for i,j in enumerate(result_dict_list):
+            response_list.append({"label": j["Issue"], "value": str(i)})
 
-    inputOption = { "inputOptions": {
-            "type": "auto-suggest",
-            "options": response_list,
-            "multiple": False,
-            "optional": False
-        }}
-    intent.update(inputOption)
-    return intent
+        inputOption = { "inputOptions": {
+                "type": "auto-suggest",
+                "options": response_list,
+                "multiple": False,
+                "optional": False
+            }}
+        intent.update(inputOption)
+        return intent
 
 def get_level_response(intent):
     chatid = str(intent['chatId'])
 
     details = int(intent['fulfillment']['parameters']['details'][0]["value"])
+    
+    with chat_data_lock:
+        ## Get QnA data from the chat_data dictionary
+        query_response = chat_data[chatid]["result_dict_list"][details]["Resolution/Escalation"]
 
-    ## Get QnA data from the chat_data dictionary
-    query_response = chat_data[chatid]["result_dict_list"][details]["Resolution/Escalation"]
-
-    message = {"message": "<b>Solution :</b></br>"+ query_response}
-    intent.update(message)
-    return intent
+        message = {"message": "<b>Solution :</b></br>"+ query_response}
+        intent.update(message)
+        return intent
 
 def get_select_submodule(intent):
     chatid = str(intent['chatId'])
     query = intent['fulfillment']['parameters']['question']
     module = intent['fulfillment']['parameters']['module']
 
-    sim_indices = chat_data[chatid]["indices"]
-    chat_sim = chat_data[chatid]["similar"]
+    with chat_data_lock:
 
-    cat_list = list(set([chat_sim[i]["Sub-Module"] for i in sim_indices]))
+        sim_indices = chat_data[chatid]["indices"]
+        chat_sim = chat_data[chatid]["similar"]
 
-
-    payload = [
-        {
-        "label": i,
-        "value": i,
-        "trigger": 20006} for i in cat_list]
-
-    payload.append({"label": "Rephrase query", "value": "Rephrase query", "trigger": 20000})
-    payload.append({"label": "Go Back", "value": "Go Back","image": "https://i.ibb.co/RSJ9szb/back.png", "trigger": 20001})
+        cat_list = list(set([chat_sim[i]["Sub-Module"] for i in sim_indices]))
 
 
-    metadata = {"metadata": {
-            "payload": payload,
-            "templateId": 6
-        }}
+        payload = [
+            {
+            "label": i,
+            "value": i,
+            "trigger": 20006} for i in cat_list]
 
-    intent.update(metadata)
-    return intent
+        payload.append({"label": "Rephrase query", "value": "Rephrase query", "trigger": 20000})
+        payload.append({"label": "Go Back", "value": "Go Back","image": "https://i.ibb.co/RSJ9szb/back.png", "trigger": 20001})
+
+
+        metadata = {"metadata": {
+                "payload": payload,
+                "templateId": 6
+            }}
+
+        intent.update(metadata)
+        return intent
 
 def get_submodule_suggestions(intent):
     chatid = str(intent['chatId'])
     query_user = intent['fulfillment']['parameters']['question']  
     module = intent['fulfillment']['parameters']['module']
     submodule = intent['fulfillment']['parameters'].get('submodule')
-    chat_data[chatid]["submodule"] = submodule  
 
-    sim_indices = chat_data[chatid]["indices"]
-    chat_sim = chat_data[chatid]["similar"]
+    with chat_data_lock:
+        chat_data[chatid]["submodule"] = submodule  
 
-    sim_answer = [(i,chat_sim[i]['Issue']) for i in sim_indices if chat_sim[i]['Sub-Module'] == submodule]
-    print(sim_answer)
-    payload = [{
-                    "label": question,
-                    "value": str(question_index),
-                    "trigger": 20007
-                }
-            for question_index,question in sim_answer[:5]]
-    if len(sim_answer) > 5:    
-        payload.append({"label": "🔍➡️ See More Suggestions", "value": "See More Suggestions", "trigger": 20010})
-    else:
-        payload.append({"label": "Rephrase query", "value": "Rephrase query", "trigger": 20000})
-        payload.append({"label": "Select Issue Category", "value": "Select Issue Category", "trigger": 20012})
-        payload.append({"label": "Go Back", "value": "Go Back","image": "https://i.ibb.co/RSJ9szb/back.png", "trigger": 20005})
+        sim_indices = chat_data[chatid]["indices"]
+        chat_sim = chat_data[chatid]["similar"]
 
-    
-    metadata = {"metadata": {"payload": payload, "templateId": 6 }}
+        sim_answer = [(i,chat_sim[i]['Issue']) for i in sim_indices if chat_sim[i]['Sub-Module'] == submodule]
+        print(sim_answer)
+        payload = [{
+                        "label": question,
+                        "value": str(question_index),
+                        "trigger": 20007
+                    }
+                for question_index,question in sim_answer[:5]]
+        if len(sim_answer) > 5:    
+            payload.append({"label": "🔍➡️ See More Suggestions", "value": "See More Suggestions", "trigger": 20010})
+        else:
+            payload.append({"label": "Rephrase query", "value": "Rephrase query", "trigger": 20000})
+            payload.append({"label": "Select Issue Category", "value": "Select Issue Category", "trigger": 20012})
+            payload.append({"label": "Go Back", "value": "Go Back","image": "https://i.ibb.co/RSJ9szb/back.png", "trigger": 20005})
 
-    intent.update(metadata)
-      
-    return intent
+        
+        metadata = {"metadata": {"payload": payload, "templateId": 6 }}
+
+        intent.update(metadata)
+        
+        return intent
 def action_submodule_suggestions_more(intent):
     chatid = str(intent['chatId'])
     submodule = intent['fulfillment']['parameters'].get('submodule')
-    sim_indices = chat_data[chatid]["indices"]
-    chat_sim = chat_data[chatid]["similar"]
+    with chat_data_lock:
+        sim_indices = chat_data[chatid]["indices"]
+        chat_sim = chat_data[chatid]["similar"]
 
-    sim_answer = [(i,chat_sim[i]['Issue']) for i in sim_indices if chat_sim[i]['Sub-Module'] == submodule]
-    print(sim_answer)
-    payload = [{
-                    "label": question,
-                    "value": str(question_index),
-                    "trigger": 20011
-                }
-            for question_index,question in sim_answer[5:]]
-    payload .append({"label": "Rephrase query", "value": "Rephrase query", "trigger": 20000})
-    payload.append({"label": "Select Issue Category", "value": "Select Issue Category", "trigger": 20012})
-    payload.append({"label": "Go Back", "value": "Go Back","image": "https://i.ibb.co/RSJ9szb/back.png", "trigger": 20001})
+        sim_answer = [(i,chat_sim[i]['Issue']) for i in sim_indices if chat_sim[i]['Sub-Module'] == submodule]
+        print(sim_answer)
+        payload = [{
+                        "label": question,
+                        "value": str(question_index),
+                        "trigger": 20011
+                    }
+                for question_index,question in sim_answer[5:]]
+        payload .append({"label": "Rephrase query", "value": "Rephrase query", "trigger": 20000})
+        payload.append({"label": "Select Issue Category", "value": "Select Issue Category", "trigger": 20012})
+        payload.append({"label": "Go Back", "value": "Go Back","image": "https://i.ibb.co/RSJ9szb/back.png", "trigger": 20001})
 
-    
-    metadata = {"metadata": {"payload": payload, "templateId": 6 }}
+        
+        metadata = {"metadata": {"payload": payload, "templateId": 6 }}
 
-    intent.update(metadata)
-      
-    return intent
+        intent.update(metadata)
+        
+        return intent
 
 def action_get_issue_category(intent):
     chatid = str(intent['chatId'])
     query = intent['fulfillment']['parameters']['question']
     module = intent['fulfillment']['parameters']['module']
     submodule = intent['fulfillment']['parameters']['submodule']
+    with chat_data_lock:
+        sim_indices = chat_data[chatid]["indices"]
+        chat_sim = chat_data[chatid]["similar"]
 
-    sim_indices = chat_data[chatid]["indices"]
-    chat_sim = chat_data[chatid]["similar"]
+        cat_list = list(set([chat_sim[i]['Issue Category'] for i in sim_indices if chat_sim[i]['Sub-Module'] == submodule]))
 
-    cat_list = list(set([chat_sim[i]['Issue Category'] for i in sim_indices if chat_sim[i]['Sub-Module'] == submodule]))
-
-    options_list = []
-    for i in cat_list:
-        options_list.append({"label": i, "value": i})
-    metadata = {"metadata": {
-          "message": "something went wrong. Submit details again",
-          "payload": [
-            {
-              "data": {
-                "title": "Issue Category",
-                "options": options_list,
-                "optional": False
-              },
-              "name": "level3",
-              "type": "dropdown"
-            },
-            {
-              "type": "submit",
-              "label": "Next",
-              "message": "Next",
-              "trigger": 20013,
-              "formAction": "/",
-              "requestType": "POST"
-            },
-            {
-              "type": "cancel",
-              "label": "Cancel",
-              "message": "Cancelled",
-              "trigger": 20009
+        options_list = []
+        for i in cat_list:
+            options_list.append({"label": i, "value": i})
+        metadata = {"metadata": {
+            "message": "something went wrong. Submit details again",
+            "payload": [
+                {
+                "data": {
+                    "title": "Issue Category",
+                    "options": options_list,
+                    "optional": False
+                },
+                "name": "level3",
+                "type": "dropdown"
+                },
+                {
+                "type": "submit",
+                "label": "Next",
+                "message": "Next",
+                "trigger": 20013,
+                "formAction": "/",
+                "requestType": "POST"
+                },
+                {
+                "type": "cancel",
+                "label": "Cancel",
+                "message": "Cancelled",
+                "trigger": 20009
+                }
+            ],
+            "trigger": 6,
+            "templateId": 13,
+            "contentType": "300"
             }
-          ],
-          "trigger": 6,
-          "templateId": 13,
-          "contentType": "300"
         }
-    }
-    intent.update(metadata)
-    return intent
+        intent.update(metadata)
+        return intent
 
  
 def action_rulebased_issue_suggestions(intent):
@@ -364,30 +372,32 @@ def action_rulebased_issue_suggestions(intent):
     submodule = intent['fulfillment']['parameters']['submodule']
     issue_category = intent['fulfillment']['parameters']['issue_category']['level3']
 
-    sim_indices = chat_data[chatid]["indices"]
-    chat_sim = chat_data[chatid]["similar"]
+    with chat_data_lock:
+        sim_indices = chat_data[chatid]["indices"]
+        chat_sim = chat_data[chatid]["similar"]
 
-    sim_answer = [(i,chat_sim[i]['Issue']) for i in sim_indices if chat_sim[i]['Sub-Module'] == submodule and chat_sim[i]['Issue Category'] == issue_category]
+        sim_answer = [(i,chat_sim[i]['Issue']) for i in sim_indices if chat_sim[i]['Sub-Module'] == submodule and chat_sim[i]['Issue Category'] == issue_category]
 
-    response_list = []
-    for i,j in sim_answer:
-        response_list.append({"label": j, "value": i})
+        response_list = []
+        for i,j in sim_answer:
+            response_list.append({"label": j, "value": i})
 
-    inputOption = { "inputOptions": {
-            "type": "auto-suggest",
-            "options": response_list,
-            "multiple": False,
-            "optional": False
-        }}
-    intent.update(inputOption)
-    return intent
+        inputOption = { "inputOptions": {
+                "type": "auto-suggest",
+                "options": response_list,
+                "multiple": False,
+                "optional": False
+            }}
+        intent.update(inputOption)
+        return intent
 
 
 def get_ai_last_intent_response_multiple(intent):
     chatid = str(intent['chatId'])
     query_user = intent['fulfillment']['parameters']['question'][0]['value']
-    answer_list = chat_data[chatid]["similar"][query_user]["Resolution/Escalation"]
-    message = {"message": "<b>Solution :</b></br>"+answer_list}
-    intent.update(message)
-    return intent
+    with chat_data_lock:
+        answer_list = chat_data[chatid]["similar"][query_user]["Resolution/Escalation"]
+        message = {"message": "<b>Solution :</b></br>"+answer_list}
+        intent.update(message)
+        return intent
 
