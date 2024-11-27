@@ -80,7 +80,7 @@ def get_most_similar(faiss_index,text,k_=10):
             if dist > max_distance_threshold:
                 break  # Stop iterating as distances are sorted
             filtered_distances.append(dist)
-            filtered_indices.append(idx)    
+            filtered_indices.append(int(idx))    
     return filtered_distances,filtered_indices,best_match
  
 def get_answer(module_name, question,submodule=None, issuecategory=None):   
@@ -106,7 +106,7 @@ def get_answer(module_name, question,submodule=None, issuecategory=None):
     else:
         nearest_data = {}
         nearest_data_list = []
-        for j,i in enumerate(indices):
+        for i in indices:
             data = metadata[i]
             print(data['Sub-Module'])
             print(data['Issue Category'])
@@ -114,13 +114,13 @@ def get_answer(module_name, question,submodule=None, issuecategory=None):
             print(data['Resolution/Escalation'])
             print("\n \n")
 
-            nearest_data[str(j)] = {
+            nearest_data[str(i)] = {
                 "Issue": data['Issue'],
                 "Sub-Module": data['Sub-Module'],
                 "Issue Category": data['Issue Category'],
                 "Resolution/Escalation": data['Resolution/Escalation']
             }
-            nearest_data_list.append(nearest_data[str(j)])
+            nearest_data_list.append(nearest_data[str(i)])
         
         return nearest_data,nearest_data_list,best_match
     
