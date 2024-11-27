@@ -235,7 +235,7 @@ def get_select_submodule(intent):
         sim_indices = chat_data[chatid]["indices"]
         chat_sim = chat_data[chatid]["similar"]
 
-        cat_list = list(set([chat_sim[i]["Sub-Module"] for i in sim_indices]))
+        cat_list = list(set([chat_sim[str(i)]["Sub-Module"] for i in sim_indices]))
 
 
         payload = [
@@ -268,7 +268,7 @@ def get_submodule_suggestions(intent):
         sim_indices = chat_data[chatid]["indices"]
         chat_sim = chat_data[chatid]["similar"]
 
-        sim_answer = [(i,chat_sim[i]['Issue']) for i in sim_indices if chat_sim[i]['Sub-Module'] == submodule]
+        sim_answer = [(i,chat_sim[str(i)]['Issue']) for i in sim_indices if chat_sim[str(i)]['Sub-Module'] == submodule]
         print(sim_answer)
         payload = [{
                         "label": question,
@@ -296,7 +296,7 @@ def action_submodule_suggestions_more(intent):
         sim_indices = chat_data[chatid]["indices"]
         chat_sim = chat_data[chatid]["similar"]
 
-        sim_answer = [(i,chat_sim[i]['Issue']) for i in sim_indices if chat_sim[i]['Sub-Module'] == submodule]
+        sim_answer = [(i,chat_sim[str(i)]['Issue']) for i in sim_indices if chat_sim[str(i)]['Sub-Module'] == submodule]
         print(sim_answer)
         payload = [{
                         "label": question,
@@ -324,7 +324,7 @@ def action_get_issue_category(intent):
         sim_indices = chat_data[chatid]["indices"]
         chat_sim = chat_data[chatid]["similar"]
 
-        cat_list = list(set([chat_sim[i]['Issue Category'] for i in sim_indices if chat_sim[i]['Sub-Module'] == submodule]))
+        cat_list = list(set([chat_sim[str(i)]['Issue Category'] for i in sim_indices if chat_sim[str(i)]['Sub-Module'] == submodule]))
 
         options_list = []
         for i in cat_list:
@@ -376,11 +376,11 @@ def action_rulebased_issue_suggestions(intent):
         sim_indices = chat_data[chatid]["indices"]
         chat_sim = chat_data[chatid]["similar"]
 
-        sim_answer = [(i,chat_sim[i]['Issue']) for i in sim_indices if chat_sim[i]['Sub-Module'] == submodule and chat_sim[i]['Issue Category'] == issue_category]
+        sim_answer = [(i,chat_sim[str(i)]['Issue']) for i in sim_indices if chat_sim[str(i)]['Sub-Module'] == submodule and chat_sim[str(i)]['Issue Category'] == issue_category]
 
         response_list = []
         for i,j in sim_answer:
-            response_list.append({"label": j, "value": i})
+            response_list.append({"label": j, "value": str(i)})
 
         inputOption = { "inputOptions": {
                 "type": "auto-suggest",
