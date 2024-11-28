@@ -52,7 +52,8 @@ def get_multiple_suggestions(intent):
     module = intent['fulfillment']['parameters']['module']
     
     # The preprocess_query function is called to preprocess the query(for keys like JC and OPTY)
-    formatted_query = preprocess_query(query_user)    
+    formatted_query = preprocess_query(query_user)   
+    print("User query :--->>>>>",formatted_query) 
     sim_answer ,indices,best_match = get_answer(module_name=module, question=formatted_query)
     if not sim_answer:
         intent = {
