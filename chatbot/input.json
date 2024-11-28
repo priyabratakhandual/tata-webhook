@@ -2,7 +2,7 @@
     {
     "id": 1,
     "start": true,
-    "message": "👋 Greetings!<br>Welcome to Tata Motors Support Bot.",
+    "message": "👋 Greetings!<br>Welcome to Helpdesk.",
     "trigger": 10,
     "userInput": false
     },

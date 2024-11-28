@@ -5,6 +5,7 @@ import os
 from typing import Dict
 import random
 import threading
+import re
 
 
 chat_data_lock = threading.Lock()
@@ -30,14 +31,29 @@ fallback_messages = [
     "Sorry, I couldn’t understand your question. Could you please try rephrasing it?",
     "I’m unable to provide an answer right now. Could you rephrase or clarify your question?"
 ]
+
+# Define a function for query preprocessing
+def preprocess_query(query: str) -> str:
+    # Define a dictionary of replacements
+    replacements = {
+        r'\bjc\b': 'job card',  # Replace "jc" when it's a whole word
+        r'\bopty\b': 'opportunity'  # Replace "opty" when it's a whole word
+    }
     
+    # Iterate over the replacement patterns
+    for pattern, replacement in replacements.items():
+        query = re.sub(pattern, replacement, query, flags=re.IGNORECASE)
+    
+    return query
 
 def get_multiple_suggestions(intent):
     chatid = str(intent['chatId'])
-    query_user = intent['fulfillment']['parameters']['question']  
+    query_user = intent['fulfillment']['parameters']['question']
     module = intent['fulfillment']['parameters']['module']
     
-    sim_answer ,indices,best_match = get_answer(module_name=module, question=query_user)
+    # The preprocess_query function is called to preprocess the query(for keys like JC and OPTY)
+    formatted_query = preprocess_query(query_user)    
+    sim_answer ,indices,best_match = get_answer(module_name=module, question=formatted_query)
     if not sim_answer:
         intent = {
         "id": 20000,
@@ -227,8 +243,8 @@ def get_level_response(intent):
 
 def get_select_submodule(intent):
     chatid = str(intent['chatId'])
-    query = intent['fulfillment']['parameters']['question']
-    module = intent['fulfillment']['parameters']['module']
+    # query = intent['fulfillment']['parameters']['question']
+    # module = intent['fulfillment']['parameters']['module']
 
     with chat_data_lock:
 
@@ -258,8 +274,8 @@ def get_select_submodule(intent):
 
 def get_submodule_suggestions(intent):
     chatid = str(intent['chatId'])
-    query_user = intent['fulfillment']['parameters']['question']  
-    module = intent['fulfillment']['parameters']['module']
+    # query_user = intent['fulfillment']['parameters']['question']  
+    # module = intent['fulfillment']['parameters']['module']
     submodule = intent['fulfillment']['parameters'].get('submodule')
 
     with chat_data_lock:
@@ -317,8 +333,8 @@ def action_submodule_suggestions_more(intent):
 
 def action_get_issue_category(intent):
     chatid = str(intent['chatId'])
-    query = intent['fulfillment']['parameters']['question']
-    module = intent['fulfillment']['parameters']['module']
+    # query = intent['fulfillment']['parameters']['question']
+    # module = intent['fulfillment']['parameters']['module']
     submodule = intent['fulfillment']['parameters']['submodule']
     with chat_data_lock:
         sim_indices = chat_data[chatid]["indices"]
@@ -367,8 +383,8 @@ def action_get_issue_category(intent):
  
 def action_rulebased_issue_suggestions(intent):
     chatid = str(intent['chatId'])
-    query = intent['fulfillment']['parameters']['question']
-    module = intent['fulfillment']['parameters']['module']
+    # query = intent['fulfillment']['parameters']['question']
+    # module = intent['fulfillment']['parameters']['module']
     submodule = intent['fulfillment']['parameters']['submodule']
     issue_category = intent['fulfillment']['parameters']['issue_category']['level3']
 
