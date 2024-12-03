@@ -60,8 +60,6 @@ def webhook(intent : Annotated[str, Form()]):
             logging.error(f"Error processing webhook: {e}")
             response_intent = fallback_
         response_intent = handler(intent_dict)
-        print("++++++++++++++Response++++++++")
-        print(response_intent)
         logging.info("-------------------------------------------")
         logging.info(f"Response intent: {response_intent}")
         return response_intent
