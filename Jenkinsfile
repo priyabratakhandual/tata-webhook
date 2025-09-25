@@ -2,73 +2,83 @@ pipeline {
     agent any
 
     environment {
-        SSH_KEY_CRED = 'ec2-ssh-key'     // Jenkins SSH key credential ID
-        HOST_IP_CRED = 'ec2-host-ip'     // Jenkins secret text credential ID
-        DEPLOY_DIR   = '/home/ubuntu/tata-webhook'
-        GIT_REPO     = 'https://github.com/priyabratakhandual/tata-webhook.git'
+        registry           = "priyabratakhandual/tata-webhook"   // Docker Hub repo
+        registryCredential = "dockerhub-credentials"             // Jenkins credential ID for Docker Hub
+        ec2SshCredential   = "ec2-ssh-key"                       // Jenkins credential ID for EC2 SSH key
+        ec2HostCred        = "ec2-host-ip"                       // Jenkins Secret Text credential for EC2 public IP
     }
 
     stages {
-        stage('Checkout Code') {
+        stage("Checkout") {
             steps {
-                git branch: 'main', url: "${GIT_REPO}"
+                checkout scm
             }
         }
 
-        stage('Deploy to EC2') {
+        stage("Build Docker Image") {
             steps {
-                withCredentials([string(credentialsId: "${HOST_IP_CRED}", variable: 'TARGET_HOST')]) {
-                    sshagent(credentials: ["${SSH_KEY_CRED}"]) {
-                        sh """
-                        ssh -o StrictHostKeyChecking=no ubuntu@${TARGET_HOST} '
-                            set -e
-                            sudo mkdir -p ${DEPLOY_DIR}
-                            cd ${DEPLOY_DIR}
-                            
-                            # Pull latest code from GitHub
-                            if [ -d .git ]; then
-                                git reset --hard
-                                git pull origin main
-                            else
-                                git clone ${GIT_REPO} ${DEPLOY_DIR}
-                            fi
-                            
-                            # Build and run with docker-compose
-                            sudo docker-compose down
-                            sudo docker-compose up -d --build
-                        '
-                        """
+                script {
+                    dockerImage = docker.build("${registry}:prod-${BUILD_NUMBER}")
+                }
+            }
+        }
+
+        stage("Push Docker Image") {
+            steps {
+                script {
+                    docker.withRegistry('', registryCredential) {
+                        dockerImage.push("prod-${BUILD_NUMBER}")
+                        dockerImage.push("latest")
                     }
                 }
             }
         }
 
-        stage('Health Check') {
+        stage("Deploy to EC2") {
             steps {
-                withCredentials([string(credentialsId: "${HOST_IP_CRED}", variable: 'TARGET_HOST')]) {
-                    script {
-                        def response = sh (
-                            script: "curl -s -o /dev/null -w '%{http_code}' http://${TARGET_HOST}/tata-webhook/ping || true",
+                script {
+                    withCredentials([string(credentialsId: ec2HostCred, variable: 'EC2_IP')]) {
+                        sshagent([ec2SshCredential]) {
+                            sh """
+                                ssh -o StrictHostKeyChecking=no ubuntu@${EC2_IP} '
+                                    cd /home/ubuntu/deploy &&
+                                    export IMAGE_TAG=prod-${BUILD_NUMBER} &&
+                                    docker-compose pull &&
+                                    docker-compose up -d
+                                '
+                            """
+                        }
+                    }
+                }
+            }
+        }
+
+        stage("Health Check") {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: ec2HostCred, variable: 'EC2_IP')]) {
+                        def response = sh(
+                            script: "curl -s -o /dev/null -w '%{http_code}' http://${EC2_IP}/tata-webhook/ping",
                             returnStdout: true
                         ).trim()
-                        
-                        if (response != "200") {
-                            error("Health check failed! Got HTTP ${response}")
+
+                        if (response != '200') {
+                            error("❌ Health check failed! Expected 200, got ${response}")
                         } else {
-                            echo "✅ Health check passed (HTTP 200)"
+                            echo "✅ Health check passed with status 200"
                         }
                     }
                 }
             }
         }
     }
-    
+
     post {
         success {
-            echo "🎉 Deployment successful"
+            echo "🎉 Deployment successful!"
         }
         failure {
-            echo "❌ Deployment failed. Check Jenkins logs."
+            echo "❌ Deployment failed. Check logs and container status."
         }
     }
 }
