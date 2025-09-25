@@ -27,8 +27,10 @@ pipeline {
             steps {
                 script {
                     docker.withRegistry('', registryCredential) {
-                        dockerImage.push("prod-${BUILD_NUMBER}")
-                        dockerImage.push("latest")
+                        retry(3) {
+                            dockerImage.push("prod-${BUILD_NUMBER}")
+                            dockerImage.push("latest")
+                        }
                     }
                 }
             }
@@ -44,7 +46,8 @@ pipeline {
                                     cd /home/ubuntu/deploy &&
                                     export IMAGE_TAG=prod-${BUILD_NUMBER} &&
                                     docker-compose pull &&
-                                    docker-compose up -d
+                                    docker-compose up -d &&
+                                    docker image prune -af
                                 '
                             """
                         }
@@ -57,16 +60,17 @@ pipeline {
             steps {
                 script {
                     withCredentials([string(credentialsId: ec2HostCred, variable: 'EC2_IP')]) {
-                        def response = sh(
-                            script: "curl -s -o /dev/null -w '%{http_code}' http://${EC2_IP}/tata-webhook/ping",
-                            returnStdout: true
-                        ).trim()
-
-                        if (response != '200') {
-                            error("❌ Health check failed! Expected 200, got ${response}")
-                        } else {
-                            echo "✅ Health check passed with status 200"
+                        retry(5) {
+                            sleep 5
+                            def response = sh(
+                                script: "curl -s -o /dev/null -w '%{http_code}' http://${EC2_IP}/tata-webhook/ping",
+                                returnStdout: true
+                            ).trim()
+                            if (response != '200') {
+                                error("❌ Health check failed! Expected 200, got ${response}")
+                            }
                         }
+                        echo "✅ Health check passed with status 200"
                     }
                 }
             }
@@ -75,7 +79,7 @@ pipeline {
 
     post {
         success {
-            echo "🎉 Deployment successful!"
+            echo "🎉 Deployment successful! Image tag: prod-${BUILD_NUMBER}"
         }
         failure {
             echo "❌ Deployment failed. Check logs and container status."
