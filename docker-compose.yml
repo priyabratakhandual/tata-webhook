@@ -9,7 +9,9 @@ services:
       - "8000:8000"
 
   nginx:
-    image: nginx:latest
+    build:
+      context: .
+      dockerfile: Dockerfile-nginx   # <--- use your custom Dockerfile
     container_name: nginx
     restart: always
     ports:
