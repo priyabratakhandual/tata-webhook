@@ -42,6 +42,16 @@ pipeline {
                     withCredentials([string(credentialsId: ec2HostCred, variable: 'EC2_IP')]) {
                         sshagent([ec2SshCredential]) {
                             sh """
+                                # Ensure deploy folder structure exists
+                                ssh -o StrictHostKeyChecking=no ubuntu@${EC2_IP} '
+                                    mkdir -p /home/ubuntu/deploy/logs /home/ubuntu/deploy/all_data /home/ubuntu/deploy/nginx/conf.d
+                                '
+
+                                # Copy updated docker-compose.yml and nginx configs from Git
+                                scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${EC2_IP}:/home/ubuntu/deploy/
+                                scp -o StrictHostKeyChecking=no -r nginx/conf.d/ ubuntu@${EC2_IP}:/home/ubuntu/deploy/nginx/
+
+                                # Deploy with new image
                                 ssh -o StrictHostKeyChecking=no ubuntu@${EC2_IP} '
                                     cd /home/ubuntu/deploy &&
                                     export IMAGE_TAG=prod-${BUILD_NUMBER} &&
