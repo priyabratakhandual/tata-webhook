@@ -42,12 +42,13 @@ pipeline {
                     withCredentials([string(credentialsId: ec2HostCred, variable: 'EC2_IP')]) {
                         sshagent([ec2SshCredential]) {
                             sh """
-                                # Ensure deploy folder structure exists
+                                # Ensure deploy folder exists and fix ownership
                                 ssh -o StrictHostKeyChecking=no ubuntu@${EC2_IP} '
-                                    mkdir -p /home/ubuntu/deploy/logs /home/ubuntu/deploy/all_data /home/ubuntu/deploy/nginx/conf.d
+                                    sudo mkdir -p /home/ubuntu/deploy/logs /home/ubuntu/deploy/all_data /home/ubuntu/deploy/nginx/conf.d &&
+                                    sudo chown -R ubuntu:ubuntu /home/ubuntu/deploy
                                 '
 
-                                # Copy updated docker-compose.yml and nginx configs from Git
+                                # Copy updated docker-compose.yml and nginx configs from Jenkins workspace
                                 scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${EC2_IP}:/home/ubuntu/deploy/
                                 scp -o StrictHostKeyChecking=no -r nginx/conf.d/ ubuntu@${EC2_IP}:/home/ubuntu/deploy/nginx/
 
