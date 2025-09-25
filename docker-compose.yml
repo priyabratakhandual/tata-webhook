@@ -8,8 +8,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./logs:/app/logs
-      - ./all_data:/app/all_data
+      - ./logs:/app/logs   # keep logs on the host for persistence
+      # removed all_data mount so files from repo are baked into image
 
   nginx:
     image: nginx:latest
