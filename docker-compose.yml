@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  tata-webhook:
+    build: .
+    container_name: tata-webhook
+    restart: always
+    expose:
+      - "8000"
+    volumes:
+      - ./logs:/app/logs
+      - ./all_data:/app/all_data
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx-proxy
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - tata-webhook
