@@ -7,9 +7,6 @@ services:
     restart: always
     ports:
       - "8000:8000"
-    volumes:
-      - ./logs:/app/logs   # keep logs on the host for persistence
-      # removed all_data mount so files from repo are baked into image
 
   nginx:
     image: nginx:latest
@@ -17,5 +14,3 @@ services:
     restart: always
     ports:
       - "80:80"
-    volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d
