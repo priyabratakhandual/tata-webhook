@@ -2,10 +2,11 @@ pipeline {
     agent any
 
     environment {
-        registry           = "priyabratakhandual/tata-webhook"   // Docker Hub repo
-        registryCredential = "dockerhub-credentials"             // Jenkins credential ID for Docker Hub
-        ec2SshCredential   = "ec2-ssh-key"                       // Jenkins credential ID for EC2 SSH key
-        ec2HostCred        = "ec2-host-ip"                       // Jenkins Secret Text credential for EC2 public IP
+        registryApp        = "priyabratakhandual/tata-webhook"        // App repo
+        registryNginx      = "priyabratakhandual/tata-webhook-nginx"  // Nginx repo
+        registryCredential = "dockerhub-credentials"                  // Jenkins DockerHub credentials
+        ec2SshCredential   = "ec2-ssh-key"                            // Jenkins EC2 SSH key
+        ec2HostCred        = "ec2-host-ip"                            // Jenkins Secret Text for EC2 IP
     }
 
     stages {
@@ -15,21 +16,20 @@ pipeline {
             }
         }
 
-        stage("Build Docker Image") {
-            steps {
-                script {
-                    dockerImage = docker.build("${registry}:prod-${BUILD_NUMBER}")
-                }
-            }
-        }
-
-        stage("Push Docker Image") {
+        stage("Build & Push Docker Images") {
             steps {
                 script {
                     docker.withRegistry('', registryCredential) {
                         retry(3) {
-                            dockerImage.push("prod-${BUILD_NUMBER}")
-                            dockerImage.push("latest")
+                            // Build & push tata-webhook image
+                            def appImage = docker.build("${registryApp}:prod-${BUILD_NUMBER}", "-f Dockerfile .")
+                            appImage.push("prod-${BUILD_NUMBER}")
+                            appImage.push("latest")
+
+                            // Build & push nginx image
+                            def nginxImage = docker.build("${registryNginx}:prod-${BUILD_NUMBER}", "-f Dockerfile-nginx .")
+                            nginxImage.push("prod-${BUILD_NUMBER}")
+                            nginxImage.push("latest")
                         }
                     }
                 }
@@ -42,18 +42,8 @@ pipeline {
                     withCredentials([string(credentialsId: ec2HostCred, variable: 'EC2_IP')]) {
                         sshagent([ec2SshCredential]) {
                             sh """
-                                # Ensure deploy folder exists and fix ownership
                                 ssh -o StrictHostKeyChecking=no ubuntu@${EC2_IP} '
-                                    sudo mkdir -p /home/ubuntu/deploy/logs /home/ubuntu/deploy/all_data /home/ubuntu/deploy/nginx/conf.d &&
-                                    sudo chown -R ubuntu:ubuntu /home/ubuntu/deploy
-                                '
-
-                                # Copy updated docker-compose.yml and nginx configs from Jenkins workspace
-                                scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${EC2_IP}:/home/ubuntu/deploy/
-                                scp -o StrictHostKeyChecking=no -r nginx/conf.d/ ubuntu@${EC2_IP}:/home/ubuntu/deploy/nginx/
-
-                                # Deploy with new image
-                                ssh -o StrictHostKeyChecking=no ubuntu@${EC2_IP} '
+                                    mkdir -p /home/ubuntu/deploy &&
                                     cd /home/ubuntu/deploy &&
                                     export IMAGE_TAG=prod-${BUILD_NUMBER} &&
                                     docker-compose pull &&
@@ -90,7 +80,7 @@ pipeline {
 
     post {
         success {
-            echo "🎉 Deployment successful! Image tag: prod-${BUILD_NUMBER}"
+            echo "🎉 Deployment successful! Image tags: prod-${BUILD_NUMBER}"
         }
         failure {
             echo "❌ Deployment failed. Check logs and container status."

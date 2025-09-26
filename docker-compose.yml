@@ -9,9 +9,7 @@ services:
       - "8000:8000"
 
   nginx:
-    build:
-      context: .
-      dockerfile: Dockerfile-nginx   # <--- use your custom Dockerfile
+    image: priyabratakhandual/tata-webhook-nginx:${IMAGE_TAG}
     container_name: nginx
     restart: always
     ports:
