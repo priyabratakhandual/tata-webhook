@@ -1,8 +1,11 @@
 # Start from the official Nginx image
 FROM nginx:latest
 
-# Copy your custom nginx config into the container
+# Remove the default config shipped with nginx
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copy only your custom nginx configs
 COPY nginx/conf.d/ /etc/nginx/conf.d/
 
-# Expose port 80 (optional, since base nginx already does this)
+# Expose port 80 (already in base image, but kept for clarity)
 EXPOSE 80
